@@ -1,0 +1,15 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model PlatformMetadata {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

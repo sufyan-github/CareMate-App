@@ -1,0 +1,23 @@
+{
+  "name": "caremate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CareMate medication-support platform",
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter './apps/api' build && pnpm --filter './apps/worker' build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm --filter './apps/**' lint",
+    "test": "pnpm --filter './apps/**' test",
+    "test:integration": "pnpm --filter './apps/**' test:integration",
+    "typecheck": "pnpm --filter './apps/**' typecheck"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}
