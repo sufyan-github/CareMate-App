@@ -1,12 +1,12 @@
-# CareMate-App
+# CareMate
 
-CareMate (CARELINK) is a Bangladesh-first medication-support and family-care platform specification. It covers prescription capture and confirmation, offline medication reminders, dose reporting, caregiver escalation, inventory, authentication by OTP, and provider-independent subscriptions.
+CareMate is a Bangladesh-first medication-support and family-care platform specification. It covers prescription capture and confirmation, offline medication reminders, dose reporting, caregiver escalation, inventory, authentication by OTP, and provider-independent subscriptions.
 
 ## Documentation
 
-- [Complete product and technical specification](outputs/CARELINK_COMPLETE_SPECIFICATION.md)
-- [Discovery report](outputs/CARELINK_DISCOVERY_REPORT.md)
-- [Research evidence](outputs/CARELINK_RESEARCH_EVIDENCE.md)
+- [Complete product and technical specification](outputs/CareMate_COMPLETE_SPECIFICATION.md)
+- [Discovery report](outputs/CareMate_DISCOVERY_REPORT.md)
+- [Research evidence](outputs/CareMate_RESEARCH_EVIDENCE.md)
 - [Canonical domain context](CONTEXT.md)
 
 ## Status

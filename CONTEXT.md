@@ -1,6 +1,6 @@
-# CARELINK domain context
+# CareMate domain context
 
-CARELINK is a medication-support platform. It helps a person remember a planned dose, record what they report doing, and optionally keep a trusted caregiver informed. It does not diagnose, prescribe, replace a clinician, or prove that medicine was swallowed.
+CareMate is a medication-support platform. It helps a person remember a planned dose, record what they report doing, and optionally keep a trusted caregiver informed. It does not diagnose, prescribe, replace a clinician, or prove that medicine was swallowed.
 
 ## Canonical language
 
@@ -74,7 +74,7 @@ _Avoid_: Alarm, notification, dose log.
 
 The lifecycle state of a Dose Occurrence: `SCHEDULED`, `REMINDER_SENT`, `SNOOZED`, `CONFIRMED`, `SKIPPED`, `MISSED`, or `CANCELLED`.
 
-_Avoid_: `TAKEN` as a claim of ingestion. The UI may ask the User to confirm, but CARELINK stores a self-reported confirmation.
+_Avoid_: `TAKEN` as a claim of ingestion. The UI may ask the User to confirm, but CareMate stores a self-reported confirmation.
 
 ### Dose Confirmation
 

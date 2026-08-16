@@ -1,4 +1,4 @@
-# CARELINK — Complete Product and Technical Specification
+# CareMate — Complete Product and Technical Specification
 
 **Document status:** Implementation baseline  
 **Version:** 1.0  
@@ -6,13 +6,13 @@
 **Primary market:** Bangladesh  
 **Initial client:** Android application built with Flutter  
 **Languages:** Bangla and English  
-**Research basis:** [CARELINK Research Evidence](./CARELINK_RESEARCH_EVIDENCE.md) and [CARELINK Discovery Report](./CARELINK_DISCOVERY_REPORT.md)
+**Research basis:** [CareMate Research Evidence](./CareMate_RESEARCH_EVIDENCE.md) and [CareMate Discovery Report](./CareMate_DISCOVERY_REPORT.md)
 
-> CARELINK is a medication-support product, not a medical device, diagnosis service, prescribing system, or emergency service. A User confirmation is a self-report; the product must never claim that medicine was swallowed.
+> CareMate is a medication-support product, not a medical device, diagnosis service, prescribing system, or emergency service. A User confirmation is a self-report; the product must never claim that medicine was swallowed.
 
 ## 1. Executive specification
 
-CARELINK helps a Patient Profile turn a photographed or manually entered prescription into a confirmed medication plan, receive dependable on-device reminders, report a dose outcome, track estimated stock, and—when explicit consent exists—notify a Caregiver after a missed dose. Premium capabilities add expanded caregiving, reports, optional voice assistance, and partner-backed delivery channels.
+CareMate helps a Patient Profile turn a photographed or manually entered prescription into a confirmed medication plan, receive dependable on-device reminders, report a dose outcome, track estimated stock, and—when explicit consent exists—notify a Caregiver after a missed dose. Premium capabilities add expanded caregiving, reports, optional voice assistance, and partner-backed delivery channels.
 
 The implementation is an offline-capable Flutter client backed by a NestJS modular monolith, a separate asynchronous worker, PostgreSQL, Redis/BullMQ, S3-compatible object storage, Firebase Cloud Messaging (FCM), a provider-neutral SMS Interface, a bKash Payment Adapter, and an optional bdapps Carrier Billing Adapter. All external integrations are behind narrow Interfaces so demo and unapproved provider behavior cannot contaminate core medication logic.
 
@@ -22,7 +22,7 @@ The product is a **conditional build-and-pilot**, not an unconditional public la
 
 ### 1.2 Product promise
 
-“CARELINK helps you follow a medicine plan and keeps trusted family informed when you ask it to.”
+“CareMate helps you follow a medicine plan and keeps trusted family informed when you ask it to.”
 
 ### 1.3 Non-negotiable outcomes
 
@@ -126,7 +126,7 @@ The product is a **conditional build-and-pilot**, not an unconditional public la
 - Automatic activation from OCR without User confirmation.
 - Claiming a dose was ingested.
 - Treating reminder silence, missing device connectivity, or missed confirmation as proof of a medical emergency.
-- Using bdapps subscription OTP as CARELINK login OTP without written provider authorization.
+- Using bdapps subscription OTP as CareMate login OTP without written provider authorization.
 - Sending production caregiver SMS or charging a subscriber from Demo Mode.
 
 ## 3. Actors, roles, and authorization
@@ -135,7 +135,7 @@ The product is a **conditional build-and-pilot**, not an unconditional public la
 
 | Actor | Goal | Primary capabilities |
 |---|---|---|
-| User | Access CARELINK securely | Authenticate, manage sessions, privacy, language |
+| User | Access CareMate securely | Authenticate, manage sessions, privacy, language |
 | Self-managing Patient | Follow their own plan | Confirm plan, receive reminders, report outcome, manage sharing |
 | Assisted Patient | Receive support | Same patient capabilities with optional Caregiver assistance |
 | Caregiver | Support one or more people | View granted data, receive alerts, optionally manage schedules |
@@ -295,7 +295,7 @@ Permissions are requested contextually after a plain-language explanation:
 - Camera/photo access when capturing/importing a Prescription Image.
 - Microphone only when the User starts an optional voice feature.
 - Phone call permission is avoided by opening the dialer with an explicit User action where possible.
-- CARELINK does not request read/send SMS permission for provider-delivered OTP or caregiver messages.
+- CareMate does not request read/send SMS permission for provider-delivered OTP or caregiver messages.
 
 Denial leaves a usable fallback and a readiness warning. Repeated prompts follow platform policy and never trap the User.
 
@@ -308,7 +308,7 @@ flowchart TD
     A["Launch"] --> B{"Valid local session?"}
     B -- Yes --> C["Hydrate local data"] --> D["Today / People"]
     B -- No --> E["Select language"] --> F["Safety onboarding"]
-    F --> G["Enter phone number"] --> H["Request CARELINK login OTP"]
+    F --> G["Enter phone number"] --> H["Request CareMate login OTP"]
     H --> I["Enter OTP"] --> J{"Server verifies atomically"}
     J -- No --> K["Attempt error / resend rules"] --> I
     J -- Yes, new --> L["Create profile"] --> M["Permission education"] --> D
@@ -368,7 +368,7 @@ Escalation evaluates only after the server knows the occurrence is missed, or af
 1. Patient enters Caregiver phone number and selects permissions/channels.
 2. Server creates a single-use, expiring invitation with no medical detail in the message.
 3. Existing User receives in-app/push; an approved SMS channel may deliver a neutral invitation link/code.
-4. Recipient authenticates with CARELINK login OTP and sees who invited them and what access is requested.
+4. Recipient authenticates with CareMate login OTP and sees who invited them and what access is requested.
 5. Recipient accepts or declines. Acceptance creates an `ACTIVE` Care Relationship.
 6. Either party can end the relationship. The server immediately denies new reads; clients remove cached shared data at next sync/session event.
 7. Re-invitation after revoke creates a new relationship and never resurrects prior consent silently.
@@ -387,7 +387,7 @@ Connectivity status is informative, not proof that the internet works. FCM is a 
 
 ### 5.6 Emergency/help flow
 
-CARELINK can display configured emergency contacts and open the phone dialer. Copy must say that CARELINK does not monitor emergencies and instruct Users to contact local emergency/clinical services for urgent concerns. No automated diagnosis or emergency dispatch is implied.
+CareMate can display configured emergency contacts and open the phone dialer. Copy must say that CareMate does not monitor emergencies and instruct Users to contact local emergency/clinical services for urgent concerns. No automated diagnosis or emergency dispatch is implied.
 
 ## 6. Authentication and OTP verification specification
 
@@ -395,7 +395,7 @@ CARELINK can display configured emergency contacts and open the phone dialer. Co
 
 The canonical login identifier is an E.164 Bangladesh mobile number. Input accepts common local forms and normalizes them server-side to `+8801XXXXXXXXX`. The displayed phone is masked except where the User is confirming an intentional change.
 
-CARELINK owns the login challenge lifecycle. `OtpDeliveryProvider` is a replaceable Interface backed by an approved transactional SMS provider. The public bdapps `/otp/request` and `/otp/verify` operations documented during research activate a bdapps subscription; they must not be reused as general CARELINK authentication without written authorization. Demo and automated tests use `MockOtpAdapter` with an obvious non-production banner.
+CareMate owns the login challenge lifecycle. `OtpDeliveryProvider` is a replaceable Interface backed by an approved transactional SMS provider. The public bdapps `/otp/request` and `/otp/verify` operations documented during research activate a bdapps subscription; they must not be reused as general CareMate authentication without written authorization. Demo and automated tests use `MockOtpAdapter` with an obvious non-production banner.
 
 ### 6.2 Request OTP
 
@@ -576,7 +576,7 @@ The MVP uses a merchant-approved, server-created payment for a fixed subscriptio
 ```mermaid
 sequenceDiagram
     participant U as User App
-    participant A as CARELINK API
+    participant A as CareMate API
     participant W as Worker
     participant B as bKash Adapter
     U->>A: POST /subscription-checkouts (planVersion, idempotency key)
@@ -599,14 +599,14 @@ Payment Attempt states: `CREATED`, `PENDING_USER_ACTION`, `PROCESSING`, `SUCCEED
 Required controls:
 
 - Server obtains/caches grant token; credentials never enter Flutter.
-- One CARELINK order per checkout intent; amount/currency/plan resolved server-side.
+- One CareMate order per checkout intent; amount/currency/plan resolved server-side.
 - `Idempotency-Key` is required when creating checkout and refund commands.
 - The app redirect is never trusted as proof of payment.
 - Execute/query result is checked for payment ID, merchant invoice/order reference, amount, currency, and terminal status.
 - Provider callback is authenticated by the exact merchant documentation available at onboarding, stored in Provider Event Inbox, and processed idempotently.
 - A reconciliation job queries stuck attempts and records every decision.
 - Refunds are staff-controlled, reasoned, permission-gated, and reconciled before Entitlement change.
-- Receipt shows CARELINK order ID, provider transaction reference, amount, time, plan term, and status.
+- Receipt shows CareMate order ID, provider transaction reference, amount, time, plan term, and status.
 
 ### 7.5 Robi/bdapps carrier subscription flow
 
@@ -775,7 +775,7 @@ flowchart LR
       DM --> AL
       DM --> SW
     end
-    subgraph Platform["CARELINK platform"]
+    subgraph Platform["CareMate platform"]
       API["NestJS API modular monolith"]
       WK["NestJS/BullMQ worker"]
       PG["PostgreSQL"]
@@ -830,7 +830,7 @@ Versions are pinned by lockfiles and release tooling. At Sprint 0, select the la
 | Observability | Sentry-compatible crash Adapter + OpenTelemetry correlation IDs | Consent-aware, redacted telemetry |
 | Testing | `flutter_test`, `integration_test`, mock/fake Interfaces, golden tests | Domain, widget, accessibility, and device flows |
 
-Android 13+ requires runtime `POST_NOTIFICATIONS`; new installs begin with notifications off until granted. Exact alarms require special handling/access on recent Android versions, and full-screen intents are restricted on Android 14+. CARELINK must check capability and provide a normal heads-up notification fallback rather than promising an alarm it cannot deliver. See [notification permission](https://developer.android.com/develop/ui/compose/notifications/notification-permission), [exact alarms](https://developer.android.com/develop/background-work/services/alarms), and [Android 14 full-screen restrictions](https://developer.android.com/about/versions/14/behavior-changes-14#secure-fsi).
+Android 13+ requires runtime `POST_NOTIFICATIONS`; new installs begin with notifications off until granted. Exact alarms require special handling/access on recent Android versions, and full-screen intents are restricted on Android 14+. CareMate must check capability and provide a normal heads-up notification fallback rather than promising an alarm it cannot deliver. See [notification permission](https://developer.android.com/develop/ui/compose/notifications/notification-permission), [exact alarms](https://developer.android.com/develop/background-work/services/alarms), and [Android 14 full-screen restrictions](https://developer.android.com/about/versions/14/behavior-changes-14#secure-fsi).
 
 #### Backend and infrastructure
 
@@ -916,7 +916,7 @@ Implementations include fake/local, sandbox, and approved production Adapters. D
 ### 9.4 Repository structure
 
 ```text
-carelink/
+caremate/
 ├── apps/
 │   ├── mobile/                 # Flutter application
 │   │   ├── lib/app/            # bootstrap, router, theme, l10n
@@ -1265,7 +1265,7 @@ Because Android notification channel importance becomes user-controlled, the rea
 
 ### 13.4 Privacy-safe copy
 
-Lock-screen default: “You have a CARELINK reminder” rather than medicine name. The User may explicitly enable detailed lock-screen content. Caregiver SMS uses minimal content and an authenticated deep link; it does not include prescription imagery, diagnosis, or more medication detail than consent allows.
+Lock-screen default: “You have a CareMate reminder” rather than medicine name. The User may explicitly enable detailed lock-screen content. Caregiver SMS uses minimal content and an authenticated deep link; it does not include prescription imagery, diagnosis, or more medication detail than consent allows.
 
 ## 14. Background jobs and event processing
 
@@ -1297,7 +1297,7 @@ BullMQ scheduler/worker clocks do not alone define medical state. Periodic repai
 - Malware/content scanning where available before provider processing.
 - Provider request contains only the necessary image, a non-identifying correlation ID, and language hints.
 - Raw provider output is encrypted and short-lived.
-- Normalization maps provider-specific result into CARELINK OCR Draft fields.
+- Normalization maps provider-specific result into CareMate OCR Draft fields.
 - Timeouts, low confidence, handwriting limits, unsupported formats, and provider outage return an editable manual path.
 - OCR provider terms, data location, training use, deletion, and subprocessor posture require privacy review.
 
@@ -1380,7 +1380,7 @@ At collection time, explain:
 - What data is collected and why.
 - That OCR uses an external processor when enabled.
 - What a Caregiver can see and which alerts they receive.
-- Whether an SMS may reveal that CARELINK is being used and whether any subscriber charge applies.
+- Whether an SMS may reveal that CareMate is being used and whether any subscriber charge applies.
 - That confirmations and adherence indicators are self-reported/app-based.
 - How to withdraw sharing, export data, and request deletion.
 
@@ -1405,7 +1405,7 @@ Audit metadata is structured and redacted. “Do not log sensitive payloads” a
 
 ### 16.6 AI companion safety (Phase 2 gate)
 
-The AI companion is a separate Module and disabled by default until evaluated. It may explain CARELINK UI, read the confirmed plan, help record a User choice, and offer non-clinical companionship. It must refuse diagnosis, dosage changes, interactions, treatment decisions, and emergency triage beyond directing the User to appropriate human/emergency help.
+The AI companion is a separate Module and disabled by default until evaluated. It may explain CareMate UI, read the confirmed plan, help record a User choice, and offer non-clinical companionship. It must refuse diagnosis, dosage changes, interactions, treatment decisions, and emergency triage beyond directing the User to appropriate human/emergency help.
 
 Controls:
 
@@ -1793,7 +1793,7 @@ Assume two-week sprints, a cross-functional team, and parallel product/design/re
 - Sandbox/certification adverse paths and production configuration review pass.
 - Callback verification, reconciliation, idempotency, mismatch review, cancellation, refund, entitlement expiry, and support operations are tested.
 - Price/renewal/cancellation/charge/SMS disclosures are legally and commercially approved in Bangla and English.
-- Finance can reconcile CARELINK orders, provider transactions, refunds, and Entitlement periods.
+- Finance can reconcile CareMate orders, provider transactions, refunds, and Entitlement periods.
 
 ## 26. Decisions and approval gates
 
@@ -1802,7 +1802,7 @@ Assume two-week sprints, a cross-functional team, and parallel product/design/re
 - Android-first Flutter client; backend modular monolith plus worker.
 - Riverpod and Drift used consistently; no parallel state/database patterns.
 - Local OS alarms are the Patient reminder path; FCM is not a substitute.
-- Login OTP is provider-neutral CARELINK authentication.
+- Login OTP is provider-neutral CareMate authentication.
 - OCR is Draft-only until explicit User confirmation.
 - Dose outcome is `CONFIRMED`, never ingestion proof.
 - Care access is relationship/permission/consent-based.
@@ -1837,7 +1837,7 @@ Assume two-week sprints, a cross-functional team, and parallel product/design/re
 
 ## 27. Source and standards notes
 
-This implementation specification incorporates the project’s detailed [research evidence](./CARELINK_RESEARCH_EVIDENCE.md). Provider facts should be rechecked against the merchant/partner documentation issued during onboarding; unsupported details remain approval gates rather than invented contracts.
+This implementation specification incorporates the project’s detailed [research evidence](./CareMate_RESEARCH_EVIDENCE.md). Provider facts should be rechecked against the merchant/partner documentation issued during onboarding; unsupported details remain approval gates rather than invented contracts.
 
 Primary technical references:
 

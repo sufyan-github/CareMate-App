@@ -1,8 +1,8 @@
-# CARELINK Discovery Report
+# CareMate Discovery Report
 
 **Research cut-off:** 16 August 2026  
 **Scope:** problem definition, Bangladesh market context, consumer/service acceptance, competition, bdapps/Robi feasibility, bKash feasibility, and validation plan  
-**Product:** CARELINK — *Medicine. Memory. Family.*
+**Product:** CareMate — *Medicine. Memory. Family.*
 
 ## Executive decision
 
@@ -13,7 +13,7 @@ The evidence supports four conclusions:
 1. The underlying problem is credible. Medication routines are difficult to manage, Bangladesh has a large NCD burden, and family support is an important part of care.
 2. The delivery channels are plausible. Mobile and mobile-internet subscriptions are widespread, but subscriptions are not the same as unique people or smartphone ownership; an offline-first design and SMS fallback remain necessary.
 3. Older Bangladeshi users may accept mHealth when it is useful, simple, socially supported, and low-anxiety. Acceptance is conditional, not automatic.
-4. CARELINK's individual features are not novel. The opportunity is the Bangladesh-specific combination of verified prescription capture, deterministic scheduling, stock tracking, family escalation, Bangla accessibility, offline reminders, and telecom fallback.
+4. CareMate's individual features are not novel. The opportunity is the Bangladesh-specific combination of verified prescription capture, deterministic scheduling, stock tracking, family escalation, Bangla accessibility, offline reminders, and telecom fallback.
 
 The correct first customer is **an adult family caregiver who owns an Android smartphone and manages medicines for an older parent**, while the patient experience is a simplified Bangla companion. This is more promising than asking an elderly patient to buy, configure, and operate the full service alone.
 
@@ -37,7 +37,7 @@ For families living apart, the caregiver often lacks timely, trustworthy informa
 | Adult family caregiver | Know when a loved one may need attention | Repeated calls/messages and manual tracking | Alert fatigue, false alarms, trust, privacy |
 | Self-managing chronic patient | Reliable reminders, history, and refill visibility | Alarm/calendar/notes | Setup burden and weak long-term engagement |
 | Parent managing a child | Coordinate routine safely | Paper notes and family messaging | Consent, safety, multiple schedules |
-| CARELINK operator | Deliver a dependable service at sustainable cost | N/A | SMS economics, support load, regulatory and API approvals |
+| CareMate operator | Deliver a dependable service at sustainable cost | N/A | SMS economics, support load, regulatory and API approvals |
 
 ### 1.4 The core failure sequence
 
@@ -50,7 +50,7 @@ Prescription is hard to interpret or re-enter
   -> stock can run out without warning
 ```
 
-CARELINK should interrupt this sequence without making a medical decision:
+CareMate should interrupt this sequence without making a medical decision:
 
 ```text
 Prescription image
@@ -65,13 +65,13 @@ Prescription image
 
 ### 1.5 Safety boundary
 
-CARELINK is a medication organization and family-care coordination service. It must not diagnose, prescribe, change dosage, infer physical ingestion, or treat OCR output as a medical instruction. Every OCR result is an editable draft until the user confirms it against the prescription.
+CareMate is a medication organization and family-care coordination service. It must not diagnose, prescribe, change dosage, infer physical ingestion, or treat OCR output as a medical instruction. Every OCR result is an editable draft until the user confirms it against the prescription.
 
 ## 2. Bangladesh market evidence
 
 ### 2.1 Demand context
 
-WHO reported in September 2025 that noncommunicable diseases account for **71% of deaths in Bangladesh**, with more than half of those deaths premature. This establishes a large chronic-care context, but it does not measure medication non-adherence or CARELINK demand. ([WHO Bangladesh, 7 September 2025](https://www.who.int/bangladesh/news/detail/07-09-2025-a-nation-unites-35-ministries-in-landmark-move-to-fight-against-noncommunicable-diseases))
+WHO reported in September 2025 that noncommunicable diseases account for **71% of deaths in Bangladesh**, with more than half of those deaths premature. This establishes a large chronic-care context, but it does not measure medication non-adherence or CareMate demand. ([WHO Bangladesh, 7 September 2025](https://www.who.int/bangladesh/news/detail/07-09-2025-a-nation-unites-35-ministries-in-landmark-move-to-fight-against-noncommunicable-diseases))
 
 A 2021 cross-sectional study of 2,070 people with type 2 diabetes attending five facilities in Chattogram Division found **46.3% low medication adherence** (95% CI 41.4%–55.8%). The measure was self-reported and the facilities were selected, so this is evidence of a substantial problem in that population—not a national prevalence estimate. ([Global Health Action, 2021](https://doi.org/10.1080/16549716.2021.1872895))
 
@@ -91,7 +91,7 @@ ITU's harmonized 2024 indicators estimate 64.4% personal mobile-phone ownership 
 
 ### 2.3 Market size: what can and cannot be claimed
 
-A defensible monetary TAM/SAM/SOM cannot be calculated from the reviewed evidence. Mobile subscriptions, NCD burden, and the number of older people are not equivalent to people who manage repeated medicines, have an addressable caregiver relationship, will adopt CARELINK, or will pay.
+A defensible monetary TAM/SAM/SOM cannot be calculated from the reviewed evidence. Mobile subscriptions, NCD burden, and the number of older people are not equivalent to people who manage repeated medicines, have an addressable caregiver relationship, will adopt CareMate, or will pay.
 
 Use a bottom-up model after discovery:
 
@@ -116,11 +116,11 @@ Claims about the percentage of handwritten prescriptions, typical handwriting qu
 
 ### 3.1 Evidence-based answer
 
-**Potentially yes, but acceptance has not been demonstrated for CARELINK.** Existing evidence supports a testable hypothesis, not a launch claim.
+**Potentially yes, but acceptance has not been demonstrated for CareMate.** Existing evidence supports a testable hypothesis, not a launch claim.
 
 A Bangladesh study of nearly 300 people aged 60+ found that performance expectancy, effort expectancy, social influence, technology anxiety, and resistance to change significantly affected intention to adopt mHealth. The study was conducted in Dhaka and examined mHealth generally, so it should guide design rather than be treated as national proof of demand. ([Hoque & Sorwar, 2017, DOI 10.1016/j.ijmedinf.2017.02.002](https://doi.org/10.1016/j.ijmedinf.2017.02.002))
 
-Two Bangladesh studies provide a price signal, with major caveats. Among 515 phone-owning patients with type 2 diabetes at a Dhaka hospital, 52.0% stated positive willingness to pay for diabetes SMS and the reported median was BDT 20/month; only about half could read/retrieve SMS. Among 307 adults with hypertension in rural Narail, 67.4% were willing to receive health SMS and 50.5% were willing to pay, with a median stated amount of BDT 10; fewer than half of phone owners could read SMS. These were condition-specific stated-preference studies—not completed purchases—and cannot set CARELINK pricing. ([Journal of Public Health, 2015](https://doi.org/10.1093/pubmed/fdv009), [BMC Public Health, 2021](https://doi.org/10.1186/s12889-021-12418-9))
+Two Bangladesh studies provide a price signal, with major caveats. Among 515 phone-owning patients with type 2 diabetes at a Dhaka hospital, 52.0% stated positive willingness to pay for diabetes SMS and the reported median was BDT 20/month; only about half could read/retrieve SMS. Among 307 adults with hypertension in rural Narail, 67.4% were willing to receive health SMS and 50.5% were willing to pay, with a median stated amount of BDT 10; fewer than half of phone owners could read SMS. These were condition-specific stated-preference studies—not completed purchases—and cannot set CareMate pricing. ([Journal of Public Health, 2015](https://doi.org/10.1093/pubmed/fdv009), [BMC Public Health, 2021](https://doi.org/10.1186/s12889-021-12418-9))
 
 A one-year randomized intervention in Dhaka used personalized interactive voice calls and a call centre for people with type 2 diabetes. Self-reported medication adherence was already above 90% in both groups at baseline and endline, so the intervention did not establish a clear medication-adherence improvement; it did improve some diet, exercise, and glucose-control outcomes. This is important counter-evidence against assuming reminders alone solve adherence. ([Yasmin et al., 2020](https://pmc.ncbi.nlm.nih.gov/articles/PMC7282058/))
 
@@ -142,7 +142,7 @@ A large randomized trial of low-cost reminder devices involving 53,480 participa
 
 ### 3.3 Conditions for acceptance
 
-CARELINK is more likely to be accepted if it:
+CareMate is more likely to be accepted if it:
 
 - lets a caregiver perform setup while preserving patient consent and control;
 - uses Bangla by default for the elderly experience, with voice that does not depend on an AI API;
@@ -170,22 +170,22 @@ The most serious risks are not lack of features. They are:
 
 ### 4.1 What is already standard
 
-Reminders, taken/skipped logs, adherence history, refill alerts, flexible schedules, family profiles, caregiver alerts, and prescription or label scanning already exist in various products. CARELINK must not claim invention of these categories.
+Reminders, taken/skipped logs, adherence history, refill alerts, flexible schedules, family profiles, caregiver alerts, and prescription or label scanning already exist in various products. CareMate must not claim invention of these categories.
 
-| Product | Verified first-party capabilities | Commercial signal | Gap relevant to CARELINK |
+| Product | Verified first-party capabilities | Commercial signal | Gap relevant to CareMate |
 |---|---|---|---|
 | Medisafe | Complex reminders, refill alerts, tracking, interaction warnings, and Medfriend caregiver alerts; no current first-party prescription-label OCR found | Free/Premium model; current exact checkout price varies or is unclear | No verified Bangladesh/bdapps positioning |
 | MyTherapy | Reminders, taken/skipped history, supply/refill tracking, health diary, reports, and family/team references; barcode lookup appears in older pages, not prescription OCR | Main site says free, while the current App Store exposes optional purchases | No verified Bangla, bdapps, or Bangladesh prescription workflow |
 | CareClinic | Medication and symptom tracking, appointments, caregiver coordination, missed-medication alerts, and medication photos; automatic OCR extraction is unverified | Free core plus Premium; exact current plan mapping is unclear | Broad health platform may be more complex than an elderly-first flow |
 | Dosecast | Offline reminders, backup reminders, flexible schedules, multiple dose forms, adherence, quantity and refill alerts, and multi-person support; consumer caregiver escalation is unverified | Free and Pro editions; enterprise provider platform advertises from US$3/patient/month | Strong feature overlap; no verified Bangladesh telecom/localization layer |
-| DoseAlert | On-device label OCR, escalating alarms, caregiver pairing, adherence, inventory, and local-first privacy | Seven-day trial; CAD 9.99 one-time | Very close but early-stage competitor; CARELINK needs Bangladesh-specific execution, not a generic feature claim |
+| DoseAlert | On-device label OCR, escalating alarms, caregiver pairing, adherence, inventory, and local-first privacy | Seven-day trial; CAD 9.99 one-time | Very close but early-stage competitor; CareMate needs Bangladesh-specific execution, not a generic feature claim |
 | RXClock | Site claims PWA reminders, caregiver sync, reports, refill tracking, and AI interaction checking | Site lists Free, Pro US$4.99/month, and Family US$9.99/month | Publisher, store distribution, security badges, uptime, and some plan claims were not independently verifiable |
 
 Sources: [Medisafe Medfriend case study](https://www.medisafe.com/wp-content/uploads/2024/02/Medisafe_Feb-24-Medfriend_CaseStudy.pdf), [MyTherapy](https://www.mytherapyapp.com/), [CareClinic caregiver app](https://careclinic.io/caregiver-app/), [Dosecast features](https://dosecast.com/features/), [DoseAlert](https://dosealert.app/), [RXClock](https://rxclock.app/).
 
 ### 4.2 Defensible differentiation hypothesis
 
-CARELINK's opportunity is a localized service system:
+CareMate's opportunity is a localized service system:
 
 ```text
 User-verified prescription intelligence
@@ -205,23 +205,23 @@ This is a **differentiation hypothesis**, not yet a moat. Defensibility would co
 
 bdapps offers HTTP APIs for SMS, USSD, CaaS/direct debit, subscription, and an OTP flow associated with enabling subscription. The official `sms/send` operation is `POST`, accepts application credentials server-side, supports delivery-report requests, and returns request/message identifiers. Delivery reports contain statuses including `DELIVERED`, `EXPIRED`, `UNDELIVERABLE`, `ACCEPTED`, `UNKNOWN`, and `REJECTED`. ([bdapps API documentation](https://dev.bdapps.com/API_Documentation/bdapps_tap_api.html))
 
-The subscription API supports subscribe/unsubscribe and status queries. The OTP documentation explicitly describes OTP verification as activating a bdapps subscription; it should not be assumed to be a general-purpose identity OTP for every CARELINK user without written confirmation. ([bdapps API documentation](https://dev.bdapps.com/API_Documentation/bdapps_tap_api.html))
+The subscription API supports subscribe/unsubscribe and status queries. The OTP documentation explicitly describes OTP verification as activating a bdapps subscription; it should not be assumed to be a general-purpose identity OTP for every CareMate user without written confirmation. ([bdapps API documentation](https://dev.bdapps.com/API_Documentation/bdapps_tap_api.html))
 
 bdapps publishes a simulator/developer kit for local testing and requires provisioning an application. Enabling the Subscription Charging SDK requires a request to bdapps support, after which API credentials are exposed in the developer console. ([bdapps downloads](https://dev.bdapps.com/bdapps-pro-downloads.php), [charging SDK consent steps](https://dev.bdapps.com/consent.php))
 
 ### 5.2 Critical commercial ambiguity
 
-The official pricing page describes bdapps as a subscriber-charged/revenue-share platform, including stated SMS charges of Tk 1–2 for bdapps Pro and subscription/alert models. This may not match CARELINK's intended model of the business paying for a transactional missed-dose SMS to any caregiver. ([bdapps pricing](https://dev.bdapps.com/pricing.php))
+The official pricing page describes bdapps as a subscriber-charged/revenue-share platform, including stated SMS charges of Tk 1–2 for bdapps Pro and subscription/alert models. This may not match CareMate's intended model of the business paying for a transactional missed-dose SMS to any caregiver. ([bdapps pricing](https://dev.bdapps.com/pricing.php))
 
 **Before implementation, obtain written answers from bdapps/Robi:**
 
-1. Can CARELINK send transactional caregiver alerts where CARELINK, not the recipient, bears the cost?
+1. Can CareMate send transactional caregiver alerts where CareMate, not the recipient, bears the cost?
 2. Which Robi/Airtel/other-network recipients are supported?
 3. Are caregiver alerts permitted without subscribing the recipient to a charged content service?
 4. What consent wording, opt-out, sender ID, template approval, and healthcare-content rules apply?
 5. What are current per-message costs, Unicode/Bangla segmentation rules, throughput limits, retry rules, and delivery-report SLA?
 6. What sandbox/provisioning and production approval steps apply to NADB/demo and production?
-7. Can the OTP API be used for CARELINK authentication independently of paid subscription?
+7. Can the OTP API be used for CareMate authentication independently of paid subscription?
 
 Until those answers are documented, build `SmsProvider` with `MockSmsProvider` and an isolated `BdappsSmsProvider`; do not make bdapps a hard dependency of the medication reminder.
 
@@ -233,7 +233,7 @@ The official bKash sandbox portal lists Checkout, Tokenized Checkout v2, dynamic
 
 **Architecture decision:** keep credentials and transaction verification in the backend. Model payment as `created -> pending_user_action -> succeeded | failed | cancelled | expired`, verify status server-to-server, and process callbacks idempotently. Use a `PaymentProvider` abstraction with a mock provider for demos.
 
-**Before production:** complete merchant onboarding and obtain the current merchant-specific API pack, credentials, commercial terms, callback-signature requirements, refund permissions, subscription-payment eligibility, and production approval. Public pages confirm product availability but do not establish CARELINK's eligibility or exact contract.
+**Before production:** complete merchant onboarding and obtain the current merchant-specific API pack, credentials, commercial terms, callback-signature requirements, refund permissions, subscription-payment eligibility, and production approval. Public pages confirm product availability but do not establish CareMate's eligibility or exact contract.
 
 ## 7. Recommended MVP and exclusions
 
@@ -384,7 +384,7 @@ Do not market the adherence percentage as a clinical outcome. It is an app-based
 | Business cannot cover SMS/support | High | Free local core, paid exception services, cost caps, real price testing |
 | Competition copies features | Medium | Local operations, partnerships, reliability, consent design, and validated data—not feature count |
 
-Bangladesh enacted the National Data Governance Ordinance 2025 and listed a Personal Data Protection Ordinance 2025 in the official ordinance register. Exact obligations for CARELINK's health, image, voice, child, cross-border, and caregiver data flows require current Bangladeshi legal review before production. ([Legislative and Parliamentary Affairs Division, 2025 ordinance register](https://legislativediv.gov.bd/pages/static-pages/694032c335ce18e1c0561ff1), [Bangladesh Laws, National Data Governance Ordinance 2025](https://bdlaws.minlaw.gov.bd/act-print-1573.html))
+Bangladesh enacted the National Data Governance Ordinance 2025 and listed a Personal Data Protection Ordinance 2025 in the official ordinance register. Exact obligations for CareMate's health, image, voice, child, cross-border, and caregiver data flows require current Bangladeshi legal review before production. ([Legislative and Parliamentary Affairs Division, 2025 ordinance register](https://legislativediv.gov.bd/pages/static-pages/694032c335ce18e1c0561ff1), [Bangladesh Laws, National Data Governance Ordinance 2025](https://bdlaws.minlaw.gov.bd/act-print-1573.html))
 
 ## 11. Evidence register for statistics
 
@@ -396,12 +396,12 @@ Bangladesh enacted the National Data Governance Ordinance 2025 and listed a Pers
 | BTRC internet subscribers | Feb 2026 data | 128.27m total; 113.50m mobile internet | Active in preceding 90 days; not daily reliability |
 | BTRC handset information | Feb 2026 data | 45.89% of locally produced handsets were smartphones | Production mix, not installed base |
 | ITU DataHub | 2024 indicators | 64.4% phone ownership; 53.4% internet use; gender and rural/urban gaps | National, not elderly-specific |
-| Hoque & Sorwar | May 2017 | Nearly 300 Dhaka participants aged 60+ | General mHealth intention; not national CARELINK demand |
+| Hoque & Sorwar | May 2017 | Nearly 300 Dhaka participants aged 60+ | General mHealth intention; not national CareMate demand |
 | Journal of Public Health SMS willingness study | Online Feb 2015 | 52.0% positive stated WTP; median BDT 20/month among 515 Dhaka diabetes patients | Phone-owning, urban, condition-specific; hypothetical payment |
 | BMC Public Health rural SMS study | Dec 2021 | 67.4% willing to receive; 50.5% willing to pay; median BDT 10 among 307 hypertension participants | Single rural area; hypothetical payment; SMS literacy constraint |
 | Yasmin et al. | 2020 publication; 2014–15 intervention | 320 randomized at baseline; medication adherence >90% self-reported in both groups | Urban diabetes sample; ceiling/self-report limitations |
 | Journal of Human Hypertension A/B trial | Nov 2024 | 26.5% versus 20.7% attendance among overdue patients; 78.2% versus 74.8% among regular patients with cascade versus no reminder | Visit attendance, not medication adherence or clinical outcome |
-| Choudhry et al. | 2017 | 53,480 randomized | Low-cost devices, not CARELINK; shows reminders alone may fail |
+| Choudhry et al. | 2017 | 53,480 randomized | Low-cost devices, not CareMate; shows reminders alone may fail |
 
 ## 12. Unknowns requiring primary field work or partner confirmation
 
@@ -414,7 +414,7 @@ Bangladesh enacted the National Data Governance Ordinance 2025 and listed a Pers
 - Willingness to pay and payer identity.
 - Transactional bdapps SMS eligibility, recipient networks, pricing, consent, throughput, and SLA.
 - General-purpose versus subscription-only bdapps OTP eligibility.
-- bKash merchant approval and subscription-payment terms for CARELINK.
+- bKash merchant approval and subscription-payment terms for CareMate.
 - Exact legal classification and compliance duties for health, child, voice, and cross-border data.
 
 ## 13. Recommended next action
@@ -430,10 +430,10 @@ Do **not** start with the complete 50-screen product. Run a six-week discovery m
 7. publish a pilot protocol and safety case;
 8. only then approve the narrow MVP backlog.
 
-The product should move to implementation when the problem, safe workflow, alert usefulness, reminder reliability, partner feasibility, and payment signal pass the gates above. Until then, CARELINK is a strong, locally relevant hypothesis—not a validated service.
+The product should move to implementation when the problem, safe workflow, alert usefulness, reminder reliability, partner feasibility, and payment signal pass the gates above. Until then, CareMate is a strong, locally relevant hypothesis—not a validated service.
 
 ---
 
 ## Source notes
 
-Competitor capabilities and prices are first-party product claims captured at the research cut-off and may change. They are useful for feature comparison but are not independent proof of effectiveness, security, user count, or regulatory compliance. No source in this report proves that CARELINK is clinically effective or that consumers will pay for it.
+Competitor capabilities and prices are first-party product claims captured at the research cut-off and may change. They are useful for feature comparison but are not independent proof of effectiveness, security, user count, or regulatory compliance. No source in this report proves that CareMate is clinically effective or that consumers will pay for it.
