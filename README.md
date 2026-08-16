@@ -17,6 +17,9 @@ CareMate is a Bangladesh-first medication-support and family-care platform speci
 - Encrypted phone storage, hashed OTPs, request throttling, and attempt lockout
 - Signed access tokens, rotating refresh tokens, reuse detection, and device sessions
 - Secure mobile refresh-token storage, session restore, and sign-out flow
+- Patient profile onboarding with timezone-aware, versioned updates
+- Owner-authorized medication records and explicit dose instructions
+- Mobile medication entry and list experience backed by the API
 
 Run the API checks with `pnpm --filter @caremate/api test:integration`. Run the
 mobile checks from `apps/mobile` with `flutter analyze && flutter test`.

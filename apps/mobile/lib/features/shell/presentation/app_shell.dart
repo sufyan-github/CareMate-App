@@ -1,13 +1,19 @@
 import 'package:caremate/features/care/presentation/care_page.dart';
 import 'package:caremate/features/insights/presentation/insights_page.dart';
+import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
 import 'package:caremate/features/medications/presentation/medications_page.dart';
 import 'package:caremate/features/more/presentation/more_page.dart';
 import 'package:caremate/features/today/presentation/today_page.dart';
 import 'package:flutter/material.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({required this.onLogout, super.key});
+  const AppShell({
+    required this.medicationCoordinator,
+    required this.onLogout,
+    super.key,
+  });
 
+  final PatientMedicationCoordinator medicationCoordinator;
   final Future<void> Function() onLogout;
 
   @override
@@ -49,7 +55,7 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final pages = <Widget>[
       const TodayPage(),
-      const MedicationsPage(),
+      MedicationsPage(coordinator: widget.medicationCoordinator),
       const CarePage(),
       const InsightsPage(),
       MorePage(onLogout: widget.onLogout),

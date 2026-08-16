@@ -6,6 +6,8 @@ import 'package:caremate/features/auth/domain/session_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/auth_test_support.dart';
+
 void main() {
   testWidgets('requests and verifies a development login code', (tester) async {
     final store = _MemorySessionStore();
@@ -14,7 +16,12 @@ void main() {
       sessionStore: store,
     );
 
-    await tester.pumpWidget(CareMateApp(authCoordinator: coordinator));
+    await tester.pumpWidget(
+      CareMateApp(
+        authCoordinator: coordinator,
+        patientMedicationGateway: existingPatientGateway(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Your medicines, right on time'), findsOneWidget);

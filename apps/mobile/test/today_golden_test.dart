@@ -10,7 +10,10 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      CareMateApp(authCoordinator: authenticatedCoordinator()),
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        patientMedicationGateway: existingPatientGateway(),
+      ),
     );
     await tester.pumpAndSettle();
 

@@ -7,7 +7,10 @@ import 'support/auth_test_support.dart';
 void main() {
   testWidgets('shows the CareMate Today experience on launch', (tester) async {
     await tester.pumpWidget(
-      CareMateApp(authCoordinator: authenticatedCoordinator()),
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        patientMedicationGateway: existingPatientGateway(),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -21,7 +24,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      CareMateApp(authCoordinator: authenticatedCoordinator()),
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        patientMedicationGateway: existingPatientGateway(),
+      ),
     );
     await tester.pumpAndSettle();
 

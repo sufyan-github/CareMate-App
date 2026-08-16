@@ -25,6 +25,7 @@ model User {
   updatedAt           DateTime      @updatedAt
   deletedAt           DateTime?
   sessions            AuthSession[]
+  patientProfiles     PatientProfile[]
 }
 
 model OtpChallenge {
@@ -81,4 +82,47 @@ model RefreshCredential {
   session       AuthSession @relation(fields: [sessionId], references: [id])
 
   @@index([sessionId, revokedAt])
+}
+
+model PatientProfile {
+  id           String       @id
+  ownerUserId  String       @unique
+  displayName  String
+  timezone     String
+  status       String       @default("ACTIVE")
+  version      Int          @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  owner        User         @relation(fields: [ownerUserId], references: [id])
+  medications  Medication[]
+}
+
+model Medication {
+  id                String           @id
+  patientProfileId  String
+  displayName       String
+  normalizedName    String?
+  strengthValue     Float?
+  strengthUnit      String?
+  form              String
+  notes             String?
+  status            String           @default("ACTIVE")
+  version           Int              @default(1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  patientProfile    PatientProfile   @relation(fields: [patientProfileId], references: [id])
+  instructions      DoseInstruction?
+
+  @@index([patientProfileId, status])
+}
+
+model DoseInstruction {
+  id             String      @id
+  medicationId   String      @unique
+  quantityValue  Float
+  quantityUnit   String
+  route          String
+  mealRelation   String
+  sourceText     String?
+  medication     Medication  @relation(fields: [medicationId], references: [id])
 }

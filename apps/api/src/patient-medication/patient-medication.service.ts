@@ -1,0 +1,231 @@
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { ulid } from "ulid";
+
+import { AuthError } from "../auth/auth-error.js";
+import { DatabaseService } from "../database/database.service.js";
+import type {
+  CreateMedicationDto,
+  CreatePatientProfileDto,
+  UpdateMedicationDto,
+  UpdatePatientProfileDto,
+} from "./patient-medication.dto.js";
+
+@Injectable()
+export class PatientMedicationService {
+  constructor(private readonly database: DatabaseService) {}
+
+  async createProfile(userId: string, input: CreatePatientProfileDto) {
+    this.validateTimezone(input.timezone);
+    const existing = await this.database.patientProfile.findUnique({
+      where: { ownerUserId: userId },
+    });
+    if (existing) {
+      throw new AuthError(
+        HttpStatus.CONFLICT,
+        "PATIENT_PROFILE_EXISTS",
+        "This account already has a patient profile.",
+      );
+    }
+    const profile = await this.database.patientProfile.create({
+      data: { id: ulid(), ownerUserId: userId, ...input },
+    });
+    return this.response(this.profileView(profile));
+  }
+
+  async listProfiles(userId: string) {
+    const profiles = await this.database.patientProfile.findMany({
+      orderBy: { createdAt: "asc" },
+      where: { ownerUserId: userId },
+    });
+    return this.response(profiles.map((profile) => this.profileView(profile)));
+  }
+
+  async getProfile(userId: string, profileId: string) {
+    const profile = await this.ownedProfile(userId, profileId);
+    return this.response(this.profileView(profile));
+  }
+
+  async updateProfile(
+    userId: string,
+    profileId: string,
+    input: UpdatePatientProfileDto,
+  ) {
+    await this.ownedProfile(userId, profileId);
+    if (input.timezone) this.validateTimezone(input.timezone);
+    const { expectedVersion, ...changes } = input;
+    const updated = await this.database.patientProfile.updateMany({
+      data: { ...changes, version: { increment: 1 } },
+      where: { id: profileId, ownerUserId: userId, version: expectedVersion },
+    });
+    if (updated.count !== 1) this.versionConflict();
+    return this.getProfile(userId, profileId);
+  }
+
+  async createMedication(
+    userId: string,
+    profileId: string,
+    input: CreateMedicationDto,
+  ) {
+    await this.ownedProfile(userId, profileId);
+    const { instructions, ...medication } = input;
+    const created = await this.database.medication.create({
+      data: {
+        ...medication,
+        id: ulid(),
+        instructions: { create: { id: ulid(), ...instructions } },
+        patientProfileId: profileId,
+      },
+      include: { instructions: true },
+    });
+    return this.response(this.medicationView(created));
+  }
+
+  async listMedications(userId: string, profileId: string) {
+    await this.ownedProfile(userId, profileId);
+    const medications = await this.database.medication.findMany({
+      include: { instructions: true },
+      orderBy: { createdAt: "desc" },
+      where: { patientProfileId: profileId },
+    });
+    return this.response(
+      medications.map((medication) => this.medicationView(medication)),
+    );
+  }
+
+  async getMedication(userId: string, medicationId: string) {
+    const medication = await this.ownedMedication(userId, medicationId);
+    return this.response(this.medicationView(medication));
+  }
+
+  async updateMedication(
+    userId: string,
+    medicationId: string,
+    input: UpdateMedicationDto,
+  ) {
+    await this.ownedMedication(userId, medicationId);
+    const { expectedVersion, instructions, ...changes } = input;
+    await this.database.$transaction(async (transaction) => {
+      const updated = await transaction.medication.updateMany({
+        data: { ...changes, version: { increment: 1 } },
+        where: { id: medicationId, version: expectedVersion },
+      });
+      if (updated.count !== 1) this.versionConflict();
+      if (instructions) {
+        await transaction.doseInstruction.upsert({
+          create: { id: ulid(), medicationId, ...instructions },
+          update: instructions,
+          where: { medicationId },
+        });
+      }
+    });
+    return this.getMedication(userId, medicationId);
+  }
+
+  private ownedProfile(userId: string, profileId: string) {
+    return this.database.patientProfile
+      .findFirst({ where: { id: profileId, ownerUserId: userId } })
+      .then((profile) => profile ?? this.notFound());
+  }
+
+  private ownedMedication(userId: string, medicationId: string) {
+    return this.database.medication
+      .findFirst({
+        include: { instructions: true },
+        where: {
+          id: medicationId,
+          patientProfile: { ownerUserId: userId },
+        },
+      })
+      .then((medication) => medication ?? this.notFound());
+  }
+
+  private profileView(profile: {
+    createdAt: Date;
+    displayName: string;
+    id: string;
+    status: string;
+    timezone: string;
+    updatedAt: Date;
+    version: number;
+  }) {
+    return {
+      createdAt: profile.createdAt.toISOString(),
+      displayName: profile.displayName,
+      id: profile.id,
+      status: profile.status,
+      timezone: profile.timezone,
+      updatedAt: profile.updatedAt.toISOString(),
+      version: profile.version,
+    };
+  }
+
+  private medicationView(medication: {
+    createdAt: Date;
+    displayName: string;
+    form: string;
+    id: string;
+    instructions: {
+      mealRelation: string;
+      quantityUnit: string;
+      quantityValue: number;
+      route: string;
+      sourceText: string | null;
+    } | null;
+    normalizedName: string | null;
+    notes: string | null;
+    patientProfileId: string;
+    status: string;
+    strengthUnit: string | null;
+    strengthValue: number | null;
+    updatedAt: Date;
+    version: number;
+  }) {
+    return {
+      createdAt: medication.createdAt.toISOString(),
+      displayName: medication.displayName,
+      form: medication.form,
+      id: medication.id,
+      instructions: medication.instructions,
+      normalizedName: medication.normalizedName,
+      notes: medication.notes,
+      patientProfileId: medication.patientProfileId,
+      status: medication.status,
+      strengthUnit: medication.strengthUnit,
+      strengthValue: medication.strengthValue,
+      updatedAt: medication.updatedAt.toISOString(),
+      version: medication.version,
+    };
+  }
+
+  private validateTimezone(timezone: string): void {
+    try {
+      Intl.DateTimeFormat("en", { timeZone: timezone }).format();
+    } catch {
+      throw new AuthError(
+        HttpStatus.BAD_REQUEST,
+        "TIMEZONE_INVALID",
+        "Choose a valid timezone.",
+      );
+    }
+  }
+
+  private notFound(): never {
+    throw new AuthError(
+      HttpStatus.NOT_FOUND,
+      "RESOURCE_NOT_FOUND",
+      "The requested item was not found.",
+    );
+  }
+
+  private versionConflict(): never {
+    throw new AuthError(
+      HttpStatus.CONFLICT,
+      "VERSION_CONFLICT",
+      "This item changed on another device. Refresh and try again.",
+    );
+  }
+
+  private response(data: unknown) {
+    return { data, meta: { requestId: `req_${ulid()}` } };
+  }
+}
