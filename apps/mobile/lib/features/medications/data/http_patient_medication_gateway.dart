@@ -113,6 +113,8 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
   }
 
   PatientProfile _profile(Map<String, dynamic> data) => PatientProfile(
+    accessRole: data['accessRole'] as String? ?? 'OWNER',
+    canManage: data['canManage'] as bool? ?? true,
     displayName: data['displayName'] as String,
     id: data['id'] as String,
     timezone: data['timezone'] as String,

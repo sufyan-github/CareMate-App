@@ -24,6 +24,6 @@ import { SessionController } from "./session.controller.js";
       useExisting: DevelopmentOtpDeliveryProvider,
     },
   ],
-  exports: [AccessSessionGuard, AuthTokenService],
+  exports: [AccessSessionGuard, AuthCryptoService, AuthTokenService],
 })
 export class AuthModule {}

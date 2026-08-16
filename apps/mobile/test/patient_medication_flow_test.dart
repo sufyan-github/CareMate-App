@@ -1,4 +1,6 @@
 import 'package:caremate/app/caremate_app.dart';
+import 'package:caremate/features/care/domain/care_access_gateway.dart';
+import 'package:caremate/features/medications/domain/patient_medication_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,6 +14,7 @@ void main() {
     await tester.pumpWidget(
       CareMateApp(
         authCoordinator: authenticatedCoordinator(),
+        careAccessGateway: emptyCareAccessGateway(),
         patientMedicationGateway: patientGateway,
       ),
     );
@@ -39,5 +42,60 @@ void main() {
 
     expect(find.text('Napa'), findsOneWidget);
     expect(patientGateway.medications, hasLength(1));
+  });
+
+  testWidgets('accepts caregiver access and opens a read-only shared plan', (
+    tester,
+  ) async {
+    final patientGateway = InMemoryPatientMedicationGateway();
+    late final InMemoryCareAccessGateway careGateway;
+    careGateway = InMemoryCareAccessGateway(
+      initialInvitations: const [
+        CareInvitation(
+          deliveryStatus: 'IN_APP_PENDING',
+          id: 'incoming-1',
+          inviteePhoneMasked: '••••••3456',
+          patientDisplayName: 'Parent',
+          permissions: CarePermissions(
+            canReceiveMissedDoseAlerts: true,
+            canViewMedicationPlan: true,
+          ),
+          status: 'PENDING',
+        ),
+      ],
+      onAccepted: () {
+        patientGateway.profile = const PatientProfile(
+          accessRole: 'CAREGIVER',
+          canManage: false,
+          displayName: 'Parent',
+          id: 'shared-profile',
+          timezone: 'Asia/Dhaka',
+          version: 1,
+        );
+      },
+    );
+    await tester.pumpWidget(
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        careAccessGateway: careGateway,
+        patientMedicationGateway: patientGateway,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('You have been invited to help'), findsOneWidget);
+    expect(find.text('Parent'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const Key('accept-caregiver-invitation-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(careGateway.invitations.single.status, 'ACCEPTED');
+    expect(find.text('Shared care access'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Add medicine'), findsNothing);
+    await tester.tap(find.text('Medicines'));
+    await tester.pumpAndSettle();
+    expect(find.text('Shared medicines'), findsOneWidget);
+    expect(find.text('No shared medicines'), findsOneWidget);
   });
 }

@@ -1,6 +1,7 @@
 import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
+import 'package:caremate/features/care/domain/care_access_gateway.dart';
+import 'package:caremate/features/care/presentation/care_access_entry_page.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
-import 'package:caremate/features/medications/presentation/profile_setup_page.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/shell/presentation/app_shell.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 class AuthenticatedExperience extends StatefulWidget {
   const AuthenticatedExperience({
     required this.accessToken,
+    required this.careAccessGateway,
     required this.gateway,
     required this.onLogout,
     required this.prescriptionExtractionGateway,
@@ -17,6 +19,7 @@ class AuthenticatedExperience extends StatefulWidget {
   });
 
   final String accessToken;
+  final CareAccessGateway careAccessGateway;
   final PatientMedicationGateway gateway;
   final Future<void> Function() onLogout;
   final PrescriptionExtractionGateway prescriptionExtractionGateway;
@@ -53,10 +56,13 @@ class _AuthenticatedExperienceState extends State<AuthenticatedExperience> {
         PatientMedicationStatus.loading => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
-        PatientMedicationStatus.needsProfile => ProfileSetupPage(
+        PatientMedicationStatus.needsProfile => CareAccessEntryPage(
+          accessToken: widget.accessToken,
           coordinator: _coordinator,
+          gateway: widget.careAccessGateway,
         ),
         PatientMedicationStatus.ready => AppShell(
+          careAccessGateway: widget.careAccessGateway,
           medicationCoordinator: _coordinator,
           onLogout: widget.onLogout,
           prescriptionExtractionGateway: widget.prescriptionExtractionGateway,

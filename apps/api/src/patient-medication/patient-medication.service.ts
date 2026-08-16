@@ -33,16 +33,35 @@ export class PatientMedicationService {
   }
 
   async listProfiles(userId: string) {
-    const profiles = await this.database.patientProfile.findMany({
+    const ownedProfiles = await this.database.patientProfile.findMany({
       orderBy: { createdAt: "asc" },
       where: { ownerUserId: userId },
     });
-    return this.response(profiles.map((profile) => this.profileView(profile)));
+    const sharedInvitations = await this.database.careInvitation.findMany({
+      include: { patientProfile: true },
+      orderBy: { acceptedAt: "asc" },
+      where: { acceptedByUserId: userId, status: "ACCEPTED" },
+    });
+    const sharedProfiles = sharedInvitations
+      .filter((invitation) => this.canViewPlan(invitation.permissionsJson))
+      .map((invitation) =>
+        this.profileView(
+          invitation.patientProfile,
+          "CAREGIVER",
+          JSON.parse(invitation.permissionsJson) as Record<string, boolean>,
+        ),
+      );
+    return this.response([
+      ...ownedProfiles.map((profile) => this.profileView(profile)),
+      ...sharedProfiles,
+    ]);
   }
 
   async getProfile(userId: string, profileId: string) {
-    const profile = await this.ownedProfile(userId, profileId);
-    return this.response(this.profileView(profile));
+    const access = await this.readableProfile(userId, profileId);
+    return this.response(
+      this.profileView(access.profile, access.role, access.permissions),
+    );
   }
 
   async updateProfile(
@@ -81,7 +100,7 @@ export class PatientMedicationService {
   }
 
   async listMedications(userId: string, profileId: string) {
-    await this.ownedProfile(userId, profileId);
+    await this.readableProfile(userId, profileId);
     const medications = await this.database.medication.findMany({
       include: { instructions: true },
       orderBy: { createdAt: "desc" },
@@ -93,7 +112,7 @@ export class PatientMedicationService {
   }
 
   async getMedication(userId: string, medicationId: string) {
-    const medication = await this.ownedMedication(userId, medicationId);
+    const medication = await this.readableMedication(userId, medicationId);
     return this.response(this.medicationView(medication));
   }
 
@@ -139,24 +158,85 @@ export class PatientMedicationService {
       .then((medication) => medication ?? this.notFound());
   }
 
-  private profileView(profile: {
-    createdAt: Date;
-    displayName: string;
-    id: string;
-    status: string;
-    timezone: string;
-    updatedAt: Date;
-    version: number;
-  }) {
+  private async readableProfile(userId: string, profileId: string) {
+    const profile = await this.database.patientProfile.findUnique({
+      where: { id: profileId },
+    });
+    if (!profile) this.notFound();
+    if (profile.ownerUserId === userId) {
+      return {
+        permissions: null,
+        profile,
+        role: "OWNER" as const,
+      };
+    }
+    const invitation = await this.database.careInvitation.findFirst({
+      where: {
+        acceptedByUserId: userId,
+        patientProfileId: profileId,
+        status: "ACCEPTED",
+      },
+    });
+    if (!invitation || !this.canViewPlan(invitation.permissionsJson)) {
+      this.notFound();
+    }
     return {
+      permissions: JSON.parse(invitation.permissionsJson) as Record<
+        string,
+        boolean
+      >,
+      profile,
+      role: "CAREGIVER" as const,
+    };
+  }
+
+  private async readableMedication(userId: string, medicationId: string) {
+    const medication = await this.database.medication.findUnique({
+      include: { instructions: true },
+      where: { id: medicationId },
+    });
+    if (!medication) this.notFound();
+    await this.readableProfile(userId, medication.patientProfileId);
+    return medication;
+  }
+
+  private profileView(
+    profile: {
+      createdAt: Date;
+      displayName: string;
+      id: string;
+      status: string;
+      timezone: string;
+      updatedAt: Date;
+      version: number;
+    },
+    accessRole: "OWNER" | "CAREGIVER" = "OWNER",
+    permissions: Record<string, boolean> | null = null,
+  ) {
+    return {
+      accessRole,
+      canManage: accessRole === "OWNER",
       createdAt: profile.createdAt.toISOString(),
       displayName: profile.displayName,
       id: profile.id,
+      permissions,
       status: profile.status,
       timezone: profile.timezone,
       updatedAt: profile.updatedAt.toISOString(),
       version: profile.version,
     };
+  }
+
+  private canViewPlan(permissionsJson: string): boolean {
+    try {
+      const permissions = JSON.parse(permissionsJson) as Record<
+        string,
+        unknown
+      >;
+      return permissions.canViewMedicationPlan === true;
+    } catch {
+      return false;
+    }
   }
 
   private medicationView(medication: {

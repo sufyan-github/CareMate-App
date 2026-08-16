@@ -1,4 +1,5 @@
 import 'package:caremate/features/care/presentation/care_page.dart';
+import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/care/presentation/invite_caregiver_page.dart';
 import 'package:caremate/features/insights/presentation/insights_page.dart';
 import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
@@ -13,6 +14,7 @@ import 'package:flutter/material.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
+    required this.careAccessGateway,
     required this.medicationCoordinator,
     required this.onLogout,
     required this.prescriptionExtractionGateway,
@@ -20,6 +22,7 @@ class AppShell extends StatefulWidget {
     super.key,
   });
 
+  final CareAccessGateway careAccessGateway;
   final PatientMedicationCoordinator medicationCoordinator;
   final Future<void> Function() onLogout;
   final PrescriptionExtractionGateway prescriptionExtractionGateway;
@@ -64,12 +67,21 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final pages = <Widget>[
       TodayPage(
+        canManage: widget.medicationCoordinator.profile!.canManage,
         onAddCaregiver: _openCaregiverInvitation,
         onAddMedicine: _openMedicationForm,
         onScanPrescription: _openPrescriptionScan,
       ),
       MedicationsPage(coordinator: widget.medicationCoordinator),
-      CarePage(onInvite: _openCaregiverInvitation),
+      CarePage(
+        accessToken: widget.medicationCoordinator.accessToken,
+        canManage: widget.medicationCoordinator.profile!.canManage,
+        gateway: widget.careAccessGateway,
+        isActive: _selectedIndex == 2,
+        onInvite: _openCaregiverInvitation,
+        profileId: widget.medicationCoordinator.profile!.id,
+        patientDisplayName: widget.medicationCoordinator.profile!.displayName,
+      ),
       InsightsPage(coordinator: widget.medicationCoordinator),
       MorePage(onLogout: widget.onLogout),
     ];
@@ -133,10 +145,28 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  Future<void> _openCaregiverInvitation() => Navigator.push<void>(
-    context,
-    MaterialPageRoute<void>(builder: (_) => const InviteCaregiverPage()),
-  );
+  Future<bool> _openCaregiverInvitation() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute<bool>(
+        builder: (_) => InviteCaregiverPage(
+          accessToken: widget.medicationCoordinator.accessToken,
+          gateway: widget.careAccessGateway,
+          profileId: widget.medicationCoordinator.profile!.id,
+        ),
+      ),
+    );
+    if (created == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Invitation created. It will appear when the caregiver signs in with the invited number.',
+          ),
+        ),
+      );
+    }
+    return created ?? false;
+  }
 }
 
 class _BrandMark extends StatelessWidget {

@@ -5,12 +5,14 @@ class TodayPage extends StatelessWidget {
     required this.onAddCaregiver,
     required this.onAddMedicine,
     required this.onScanPrescription,
+    this.canManage = true,
     super.key,
   });
 
   final VoidCallback onAddCaregiver;
   final VoidCallback onAddMedicine;
   final VoidCallback onScanPrescription;
+  final bool canManage;
 
   @override
   Widget build(BuildContext context) {
@@ -41,31 +43,36 @@ class TodayPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 const _ReadinessCard(),
                 const SizedBox(height: 16),
-                _EmptyReminderCard(onAddMedicine: onAddMedicine),
-                const SizedBox(height: 24),
-                Text(
-                  'Quick actions',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                _EmptyReminderCard(
+                  canManage: canManage,
+                  onAddMedicine: onAddMedicine,
+                ),
+                if (canManage) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Quick actions',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _QuickAction(
-                      icon: Icons.document_scanner_outlined,
-                      label: 'Scan prescription',
-                      onPressed: onScanPrescription,
-                    ),
-                    _QuickAction(
-                      icon: Icons.person_add_alt_1_outlined,
-                      label: 'Add caregiver',
-                      onPressed: onAddCaregiver,
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _QuickAction(
+                        icon: Icons.document_scanner_outlined,
+                        label: 'Scan prescription',
+                        onPressed: onScanPrescription,
+                      ),
+                      _QuickAction(
+                        icon: Icons.person_add_alt_1_outlined,
+                        label: 'Add caregiver',
+                        onPressed: onAddCaregiver,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -121,8 +128,12 @@ class _ReadinessCard extends StatelessWidget {
 }
 
 class _EmptyReminderCard extends StatelessWidget {
-  const _EmptyReminderCard({required this.onAddMedicine});
+  const _EmptyReminderCard({
+    required this.canManage,
+    required this.onAddMedicine,
+  });
 
+  final bool canManage;
   final VoidCallback onAddMedicine;
 
   @override
@@ -142,23 +153,27 @@ class _EmptyReminderCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No medicine reminders yet',
+              canManage ? 'No medicine reminders yet' : 'Shared care access',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Add a medicine manually or scan a prescription. You will review every detail before reminders start.',
+            Text(
+              canManage
+                  ? 'Add a medicine manually or scan a prescription. You will review every detail before reminders start.'
+                  : 'You can view the confirmed medication plan. Only the patient can add or change medicines.',
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: onAddMedicine,
-              icon: const Icon(Icons.add),
-              label: const Text('Add medicine'),
-            ),
+            if (canManage) ...[
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: onAddMedicine,
+                icon: const Icon(Icons.add),
+                label: const Text('Add medicine'),
+              ),
+            ],
           ],
         ),
       ),

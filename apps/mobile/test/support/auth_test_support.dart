@@ -2,6 +2,7 @@ import 'package:caremate/features/auth/application/auth_coordinator.dart';
 import 'package:caremate/features/auth/domain/auth_gateway.dart';
 import 'package:caremate/features/auth/domain/auth_models.dart';
 import 'package:caremate/features/auth/domain/session_store.dart';
+import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
 
@@ -24,6 +25,104 @@ InMemoryPatientMedicationGateway existingPatientGateway() =>
         version: 1,
       ),
     );
+
+InMemoryCareAccessGateway emptyCareAccessGateway() =>
+    InMemoryCareAccessGateway();
+
+class InMemoryCareAccessGateway implements CareAccessGateway {
+  InMemoryCareAccessGateway({
+    List<CareInvitation> initialInvitations = const [],
+    this.onAccepted,
+  }) {
+    invitations.addAll(initialInvitations);
+  }
+
+  final void Function()? onAccepted;
+  final List<CareInvitation> invitations = [];
+
+  @override
+  Future<CareInvitation> createInvitation({
+    required String accessToken,
+    required String phoneNumber,
+    required String profileId,
+    required CarePermissions permissions,
+  }) async {
+    final digits = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    final invitation = CareInvitation(
+      deliveryStatus: 'IN_APP_PENDING',
+      id: 'care-${invitations.length + 1}',
+      inviteePhoneMasked: '••••••${digits.substring(digits.length - 4)}',
+      patientDisplayName: 'Test patient',
+      permissions: permissions,
+      status: 'PENDING',
+    );
+    invitations.insert(0, invitation);
+    return invitation;
+  }
+
+  @override
+  Future<List<CareInvitation>> listForProfile({
+    required String accessToken,
+    required String profileId,
+  }) async => List.unmodifiable(invitations);
+
+  @override
+  Future<CareInvitation> revoke({
+    required String accessToken,
+    required String invitationId,
+  }) async {
+    final index = invitations.indexWhere((item) => item.id == invitationId);
+    final current = invitations[index];
+    final revoked = CareInvitation(
+      deliveryStatus: current.deliveryStatus,
+      id: current.id,
+      inviteePhoneMasked: current.inviteePhoneMasked,
+      patientDisplayName: current.patientDisplayName,
+      permissions: current.permissions,
+      status: 'REVOKED',
+    );
+    invitations[index] = revoked;
+    return revoked;
+  }
+
+  @override
+  Future<List<CareInvitation>> listIncoming({
+    required String accessToken,
+  }) async => invitations
+      .where((invitation) => invitation.status == 'PENDING')
+      .toList(growable: false);
+
+  @override
+  Future<CareInvitation> accept({
+    required String accessToken,
+    required String invitationId,
+  }) async {
+    final accepted = _withStatus(invitationId, 'ACCEPTED');
+    onAccepted?.call();
+    return accepted;
+  }
+
+  @override
+  Future<CareInvitation> decline({
+    required String accessToken,
+    required String invitationId,
+  }) async => _withStatus(invitationId, 'DECLINED');
+
+  CareInvitation _withStatus(String invitationId, String status) {
+    final index = invitations.indexWhere((item) => item.id == invitationId);
+    final current = invitations[index];
+    final updated = CareInvitation(
+      deliveryStatus: current.deliveryStatus,
+      id: current.id,
+      inviteePhoneMasked: current.inviteePhoneMasked,
+      patientDisplayName: current.patientDisplayName,
+      permissions: current.permissions,
+      status: status,
+    );
+    invitations[index] = updated;
+    return updated;
+  }
+}
 
 class InMemoryPatientMedicationGateway implements PatientMedicationGateway {
   InMemoryPatientMedicationGateway({this.profile});

@@ -1,7 +1,17 @@
+import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:flutter/material.dart';
 
 class InviteCaregiverPage extends StatefulWidget {
-  const InviteCaregiverPage({super.key});
+  const InviteCaregiverPage({
+    required this.accessToken,
+    required this.gateway,
+    required this.profileId,
+    super.key,
+  });
+
+  final String accessToken;
+  final CareAccessGateway gateway;
+  final String profileId;
 
   @override
   State<InviteCaregiverPage> createState() => _InviteCaregiverPageState();
@@ -12,6 +22,8 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
   final _phone = TextEditingController();
   bool _canViewPlan = true;
   bool _canReceiveMissedDoseAlerts = true;
+  bool _isSaving = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -30,7 +42,7 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
               const Text(
-                'The recipient must accept before access starts. CareMate will show exactly which permissions you grant.',
+                'The recipient must accept before access starts. In this testing build, the invitation appears after they sign in to CareMate with this number; SMS delivery is not enabled.',
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -75,9 +87,18 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
               const SizedBox(height: 20),
               FilledButton(
                 key: const Key('send-caregiver-invitation-button'),
-                onPressed: _submit,
-                child: const Text('Send invitation'),
+                onPressed: _isSaving ? null : _submit,
+                child: Text(
+                  _isSaving ? 'Creating invitation…' : 'Create invitation',
+                ),
               ),
+              if (_error case final message?) ...[
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
             ],
           ),
         ),
@@ -85,14 +106,31 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Caregiver delivery and acceptance will be enabled with the Care Access backend module.',
+    if (!_canViewPlan && !_canReceiveMissedDoseAlerts) {
+      setState(() => _error = 'Choose at least one caregiver permission.');
+      return;
+    }
+    setState(() {
+      _error = null;
+      _isSaving = true;
+    });
+    try {
+      await widget.gateway.createInvitation(
+        accessToken: widget.accessToken,
+        phoneNumber: _phone.text,
+        profileId: widget.profileId,
+        permissions: CarePermissions(
+          canReceiveMissedDoseAlerts: _canReceiveMissedDoseAlerts,
+          canViewMedicationPlan: _canViewPlan,
         ),
-      ),
-    );
+      );
+      if (mounted) Navigator.pop(context, true);
+    } on CareAccessFailure catch (failure) {
+      if (mounted) setState(() => _error = failure.message);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 }

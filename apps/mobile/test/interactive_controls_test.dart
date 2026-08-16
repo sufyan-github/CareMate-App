@@ -8,6 +8,7 @@ Future<void> _pumpSignedInApp(WidgetTester tester) async {
   await tester.pumpWidget(
     CareMateApp(
       authCoordinator: authenticatedCoordinator(),
+      careAccessGateway: emptyCareAccessGateway(),
       patientMedicationGateway: existingPatientGateway(),
     ),
   );
@@ -76,17 +77,11 @@ void main() {
     );
     await tester.drag(find.byType(ListView), const Offset(0, -280));
     await tester.pumpAndSettle();
-    await _tapVisible(
-      tester,
-      find.byKey(const Key('review-ocr-draft-button')),
-    );
+    await _tapVisible(tester, find.byKey(const Key('review-ocr-draft-button')));
 
     expect(find.text('Napa'), findsOneWidget);
     expect(find.textContaining('unverified OCR draft'), findsOneWidget);
-    await _tapVisible(
-      tester,
-      find.byKey(const Key('save-medication-button')),
-    );
+    await _tapVisible(tester, find.byKey(const Key('save-medication-button')));
 
     expect(gateway.medications, hasLength(1));
     expect(
@@ -96,13 +91,43 @@ void main() {
   });
 
   testWidgets('Today Add caregiver opens caregiver invitation', (tester) async {
-    await _pumpSignedInApp(tester);
+    final careGateway = emptyCareAccessGateway();
+    await tester.pumpWidget(
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        careAccessGateway: careGateway,
+        patientMedicationGateway: existingPatientGateway(),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     await _showTodayQuickActions(tester);
     await _tapVisible(tester, find.text('Add caregiver'));
 
     expect(find.text('Invite caregiver'), findsOneWidget);
     expect(find.byKey(const Key('caregiver-phone-input')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('caregiver-phone-input')),
+      '01800123456',
+    );
+    await _tapVisible(
+      tester,
+      find.byKey(const Key('send-caregiver-invitation-button')),
+    );
+
+    expect(careGateway.invitations, hasLength(1));
+    expect(find.textContaining('Invitation created'), findsOneWidget);
+
+    await tester.tap(find.text('Care'));
+    await tester.pumpAndSettle();
+    expect(find.text('••••••3456'), findsOneWidget);
+    expect(find.text('Waiting for acceptance'), findsOneWidget);
+    await tester.tap(find.text('Revoke'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-revoke-caregiver-button')));
+    await tester.pumpAndSettle();
+    expect(careGateway.invitations.single.status, 'REVOKED');
+    expect(find.text('No caregivers connected'), findsOneWidget);
   });
 
   testWidgets('notifications action opens notification centre', (tester) async {

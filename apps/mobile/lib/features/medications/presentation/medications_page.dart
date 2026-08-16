@@ -40,23 +40,27 @@ class MedicationsPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Your medicines',
+                      coordinator.profile?.canManage ?? true
+                          ? 'Your medicines'
+                          : 'Shared medicines',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
-                  FilledButton.icon(
-                    onPressed: () =>
-                        showMedicationForm(context, coordinator: coordinator),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add'),
-                  ),
+                  if (coordinator.profile?.canManage ?? true)
+                    FilledButton.icon(
+                      onPressed: () =>
+                          showMedicationForm(context, coordinator: coordinator),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add'),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
               if (coordinator.medications.isEmpty)
                 Expanded(
                   child: _EmptyState(
+                    canManage: coordinator.profile?.canManage ?? true,
                     onAdd: () =>
                         showMedicationForm(context, coordinator: coordinator),
                   ),
@@ -97,8 +101,9 @@ class MedicationsPage extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onAdd});
+  const _EmptyState({required this.canManage, required this.onAdd});
 
+  final bool canManage;
   final VoidCallback onAdd;
 
   @override
@@ -115,22 +120,26 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'Add your first medicine',
+              canManage ? 'Add your first medicine' : 'No shared medicines',
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Enter the label exactly as you know it. CareMate does not change or prescribe your medicine.',
+            Text(
+              canManage
+                  ? 'Enter the label exactly as you know it. CareMate does not change or prescribe your medicine.'
+                  : 'The patient has not added any medicines to the shared plan.',
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add),
-              label: const Text('Add medicine'),
-            ),
+            if (canManage) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add),
+                label: const Text('Add medicine'),
+              ),
+            ],
           ],
         ),
       ),

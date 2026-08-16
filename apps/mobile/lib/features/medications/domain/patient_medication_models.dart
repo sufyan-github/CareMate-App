@@ -1,11 +1,15 @@
 class PatientProfile {
   const PatientProfile({
+    this.accessRole = 'OWNER',
+    this.canManage = true,
     required this.displayName,
     required this.id,
     required this.timezone,
     required this.version,
   });
 
+  final String accessRole;
+  final bool canManage;
   final String displayName;
   final String id;
   final String timezone;

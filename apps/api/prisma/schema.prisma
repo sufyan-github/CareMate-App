@@ -15,36 +15,39 @@ model PlatformMetadata {
 }
 
 model User {
-  id                  String        @id
-  phoneE164Encrypted  String
-  phoneLookupHash     String        @unique
-  status              String        @default("ACTIVE")
-  locale              String        @default("bn-BD")
-  tokenVersion        Int           @default(0)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  deletedAt           DateTime?
-  sessions            AuthSession[]
-  patientProfiles     PatientProfile[]
+  id                      String            @id
+  phoneE164Encrypted      String
+  phoneLookupHash         String            @unique
+  status                  String            @default("ACTIVE")
+  locale                  String            @default("bn-BD")
+  tokenVersion            Int               @default(0)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  deletedAt               DateTime?
+  sessions                AuthSession[]
+  patientProfiles         PatientProfile[]
+  careInvitationsSent     CareInvitation[]  @relation("CareInvitationInviter")
+  careInvitationsAccepted CareInvitation[]  @relation("CareInvitationAcceptor")
+  careAccessAuditEvents   CareAccessAudit[]
 }
 
 model OtpChallenge {
-  id                    String    @id
-  phoneE164Encrypted    String
-  phoneLookupHash       String
-  purpose               String
-  locale                String
-  deviceInstallationId  String
-  requestIpHash          String    @default("")
-  codeHash               String
-  deliveryReference     String?
-  attempts              Int       @default(0)
-  maxAttempts           Int       @default(5)
-  expiresAt              DateTime
-  resendAvailableAt     DateTime
-  consumedAt             DateTime?
-  invalidatedAt          DateTime?
-  createdAt              DateTime  @default(now())
+  id                   String    @id
+  phoneE164Encrypted   String
+  phoneLookupHash      String
+  purpose              String
+  locale               String
+  deviceInstallationId String
+  requestIpHash        String    @default("")
+  codeHash             String
+  deliveryReference    String?
+  attempts             Int       @default(0)
+  maxAttempts          Int       @default(5)
+  expiresAt            DateTime
+  resendAvailableAt    DateTime
+  consumedAt           DateTime?
+  invalidatedAt        DateTime?
+  createdAt            DateTime  @default(now())
 
   @@index([phoneLookupHash, createdAt])
   @@index([deviceInstallationId, createdAt])
@@ -52,96 +55,135 @@ model OtpChallenge {
 }
 
 model AuthSession {
-  id                  String              @id
-  userId              String
-  installationId      String
-  platform            String
-  appVersion          String
-  deviceName          String
-  tokenFamilyId       String              @unique
-  expiresAt           DateTime
-  revokedAt           DateTime?
-  reuseDetectedAt     DateTime?
-  createdAt           DateTime            @default(now())
-  lastSeenAt          DateTime            @default(now())
-  user                User                @relation(fields: [userId], references: [id])
-  refreshCredentials  RefreshCredential[]
+  id                 String              @id
+  userId             String
+  installationId     String
+  platform           String
+  appVersion         String
+  deviceName         String
+  tokenFamilyId      String              @unique
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  reuseDetectedAt    DateTime?
+  createdAt          DateTime            @default(now())
+  lastSeenAt         DateTime            @default(now())
+  user               User                @relation(fields: [userId], references: [id])
+  refreshCredentials RefreshCredential[]
 
   @@index([userId, revokedAt])
 }
 
 model RefreshCredential {
-  id            String      @id
-  sessionId     String
-  tokenHash     String      @unique
-  expiresAt     DateTime
-  usedAt        DateTime?
-  revokedAt     DateTime?
-  replacedById  String?
-  createdAt     DateTime    @default(now())
-  session       AuthSession @relation(fields: [sessionId], references: [id])
+  id           String      @id
+  sessionId    String
+  tokenHash    String      @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  revokedAt    DateTime?
+  replacedById String?
+  createdAt    DateTime    @default(now())
+  session      AuthSession @relation(fields: [sessionId], references: [id])
 
   @@index([sessionId, revokedAt])
 }
 
 model PatientProfile {
-  id           String       @id
-  ownerUserId  String       @unique
-  displayName  String
-  timezone     String
-  status       String       @default("ACTIVE")
-  version      Int          @default(1)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  owner        User         @relation(fields: [ownerUserId], references: [id])
-  medications  Medication[]
-  ocrDrafts    OcrDraft[]
+  id              String           @id
+  ownerUserId     String           @unique
+  displayName     String
+  timezone        String
+  status          String           @default("ACTIVE")
+  version         Int              @default(1)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  owner           User             @relation(fields: [ownerUserId], references: [id])
+  medications     Medication[]
+  ocrDrafts       OcrDraft[]
+  careInvitations CareInvitation[]
+}
+
+model CareInvitation {
+  id                    String            @id
+  patientProfileId      String
+  inviterUserId         String
+  inviteePhoneEncrypted String
+  inviteePhoneHash      String
+  permissionsJson       String
+  status                String            @default("PENDING")
+  deliveryStatus        String            @default("IN_APP_PENDING")
+  acceptedByUserId      String?
+  expiresAt             DateTime
+  acceptedAt            DateTime?
+  declinedAt            DateTime?
+  revokedAt             DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  patientProfile        PatientProfile    @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  inviter               User              @relation("CareInvitationInviter", fields: [inviterUserId], references: [id])
+  acceptedBy            User?             @relation("CareInvitationAcceptor", fields: [acceptedByUserId], references: [id])
+  auditEvents           CareAccessAudit[]
+
+  @@index([patientProfileId, status])
+  @@index([inviteePhoneHash, status, expiresAt])
+}
+
+model CareAccessAudit {
+  id           String         @id
+  invitationId String
+  actorUserId  String
+  action       String
+  createdAt    DateTime       @default(now())
+  invitation   CareInvitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  actor        User           @relation(fields: [actorUserId], references: [id])
+
+  @@index([invitationId, createdAt])
+  @@index([actorUserId, createdAt])
 }
 
 model OcrDraft {
-  id                String         @id
-  patientProfileId  String
-  status            String         @default("REVIEW_REQUIRED")
-  documentType      String
-  language          String
-  rawText           String
-  medicinesJson     String
-  warningsJson      String
-  provider          String
-  providerModel     String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  patientProfile    PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  id               String         @id
+  patientProfileId String
+  status           String         @default("REVIEW_REQUIRED")
+  documentType     String
+  language         String
+  rawText          String
+  medicinesJson    String
+  warningsJson     String
+  provider         String
+  providerModel    String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  patientProfile   PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
 
   @@index([patientProfileId, createdAt])
 }
 
 model Medication {
-  id                String           @id
-  patientProfileId  String
-  displayName       String
-  normalizedName    String?
-  strengthValue     Float?
-  strengthUnit      String?
-  form              String
-  notes             String?
-  status            String           @default("ACTIVE")
-  version           Int              @default(1)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  patientProfile    PatientProfile   @relation(fields: [patientProfileId], references: [id])
-  instructions      DoseInstruction?
+  id               String           @id
+  patientProfileId String
+  displayName      String
+  normalizedName   String?
+  strengthValue    Float?
+  strengthUnit     String?
+  form             String
+  notes            String?
+  status           String           @default("ACTIVE")
+  version          Int              @default(1)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  patientProfile   PatientProfile   @relation(fields: [patientProfileId], references: [id])
+  instructions     DoseInstruction?
 
   @@index([patientProfileId, status])
 }
 
 model DoseInstruction {
-  id             String      @id
-  medicationId   String      @unique
-  quantityValue  Float
-  quantityUnit   String
-  route          String
-  mealRelation   String
-  sourceText     String?
-  medication     Medication  @relation(fields: [medicationId], references: [id])
+  id            String     @id
+  medicationId  String     @unique
+  quantityValue Float
+  quantityUnit  String
+  route         String
+  mealRelation  String
+  sourceText    String?
+  medication    Medication @relation(fields: [medicationId], references: [id])
 }
