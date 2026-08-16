@@ -9,6 +9,19 @@ CareMate is a Bangladesh-first medication-support and family-care platform speci
 - [Research evidence](outputs/CareMate_RESEARCH_EVIDENCE.md)
 - [Canonical domain context](CONTEXT.md)
 
-## Status
+## Implemented segments
 
-This repository currently contains the research and implementation specification. Production SMS, bdapps carrier billing, and bKash payment capabilities remain gated by provider approval and certification as described in the specification.
+- NestJS API with tracked libSQL/Turso migrations and database health checks
+- Android-first Flutter application shell with accessible Material 3 UI
+- Bangladesh phone normalization and development OTP authentication
+- Encrypted phone storage, hashed OTPs, request throttling, and attempt lockout
+- Signed access tokens, rotating refresh tokens, reuse detection, and device sessions
+- Secure mobile refresh-token storage, session restore, and sign-out flow
+
+Run the API checks with `pnpm --filter @caremate/api test:integration`. Run the
+mobile checks from `apps/mobile` with `flutter analyze && flutter test`.
+
+The current login delivery Adapter is intentionally marked as development-only
+and uses the configured demo code. Production login SMS, bdapps carrier billing,
+and bKash payments remain gated by provider approval and certification as
+described in the specification.

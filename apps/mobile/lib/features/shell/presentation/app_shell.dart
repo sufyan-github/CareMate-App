@@ -6,21 +6,15 @@ import 'package:caremate/features/today/presentation/today_page.dart';
 import 'package:flutter/material.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({required this.onLogout, super.key});
+
+  final Future<void> Function() onLogout;
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell> {
-  static const _pages = <Widget>[
-    TodayPage(),
-    MedicationsPage(),
-    CarePage(),
-    InsightsPage(),
-    MorePage(),
-  ];
-
   static const _destinations = <NavigationDestination>[
     NavigationDestination(
       icon: Icon(Icons.today_outlined),
@@ -53,6 +47,14 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final pages = <Widget>[
+      const TodayPage(),
+      const MedicationsPage(),
+      const CarePage(),
+      const InsightsPage(),
+      MorePage(onLogout: widget.onLogout),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Row(
@@ -72,7 +74,7 @@ class _AppShellState extends State<AppShell> {
           const SizedBox(width: 8),
         ],
       ),
-      body: IndexedStack(index: _selectedIndex, children: _pages),
+      body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         destinations: _destinations,

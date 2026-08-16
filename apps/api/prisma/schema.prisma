@@ -13,3 +13,72 @@ model PlatformMetadata {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+model User {
+  id                  String        @id
+  phoneE164Encrypted  String
+  phoneLookupHash     String        @unique
+  status              String        @default("ACTIVE")
+  locale              String        @default("bn-BD")
+  tokenVersion        Int           @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  deletedAt           DateTime?
+  sessions            AuthSession[]
+}
+
+model OtpChallenge {
+  id                    String    @id
+  phoneE164Encrypted    String
+  phoneLookupHash       String
+  purpose               String
+  locale                String
+  deviceInstallationId  String
+  requestIpHash          String    @default("")
+  codeHash               String
+  deliveryReference     String?
+  attempts              Int       @default(0)
+  maxAttempts           Int       @default(5)
+  expiresAt              DateTime
+  resendAvailableAt     DateTime
+  consumedAt             DateTime?
+  invalidatedAt          DateTime?
+  createdAt              DateTime  @default(now())
+
+  @@index([phoneLookupHash, createdAt])
+  @@index([deviceInstallationId, createdAt])
+  @@index([requestIpHash, createdAt])
+}
+
+model AuthSession {
+  id                  String              @id
+  userId              String
+  installationId      String
+  platform            String
+  appVersion          String
+  deviceName          String
+  tokenFamilyId       String              @unique
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  reuseDetectedAt     DateTime?
+  createdAt           DateTime            @default(now())
+  lastSeenAt          DateTime            @default(now())
+  user                User                @relation(fields: [userId], references: [id])
+  refreshCredentials  RefreshCredential[]
+
+  @@index([userId, revokedAt])
+}
+
+model RefreshCredential {
+  id            String      @id
+  sessionId     String
+  tokenHash     String      @unique
+  expiresAt     DateTime
+  usedAt        DateTime?
+  revokedAt     DateTime?
+  replacedById  String?
+  createdAt     DateTime    @default(now())
+  session       AuthSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId, revokedAt])
+}
