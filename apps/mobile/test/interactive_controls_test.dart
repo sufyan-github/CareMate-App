@@ -74,8 +74,12 @@ void main() {
       find.byKey(const Key('ocr-source-text-input')),
       'Napa 500 mg - one tablet after food',
     );
-    await tester.tap(find.byKey(const Key('review-ocr-draft-button')));
+    await tester.drag(find.byType(ListView), const Offset(0, -280));
     await tester.pumpAndSettle();
+    await _tapVisible(
+      tester,
+      find.byKey(const Key('review-ocr-draft-button')),
+    );
 
     expect(find.text('Napa'), findsOneWidget);
     expect(find.textContaining('unverified OCR draft'), findsOneWidget);

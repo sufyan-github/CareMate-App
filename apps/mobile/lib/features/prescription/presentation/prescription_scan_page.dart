@@ -1,10 +1,20 @@
+import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class PrescriptionScanPage extends StatefulWidget {
-  const PrescriptionScanPage({required this.recognizer, super.key});
+  const PrescriptionScanPage({
+    required this.accessToken,
+    required this.extractionGateway,
+    required this.profileId,
+    required this.recognizer,
+    super.key,
+  });
 
+  final String accessToken;
+  final PrescriptionExtractionGateway extractionGateway;
+  final String profileId;
   final PrescriptionTextRecognizer recognizer;
 
   @override
@@ -18,6 +28,8 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
   bool _isProcessing = false;
   bool _isReviewing = false;
   String? _error;
+  String? _notice;
+  List<String> _warnings = const [];
 
   @override
   void dispose() {
@@ -64,7 +76,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Use good lighting and keep the medicine label inside the frame. English printed text works best in this build.',
+                'Use good lighting and keep the whole prescription inside the frame. On-device preview supports English printed text; configured cloud OCR can also process Bangla and handwriting.',
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
@@ -91,7 +103,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
                 const SizedBox(height: 20),
                 const Center(child: CircularProgressIndicator()),
                 const SizedBox(height: 8),
-                const Center(child: Text('Reading the image on this device…')),
+                const Center(child: Text('Creating a review draft…')),
               ],
             ] else ...[
               Text(
@@ -104,6 +116,17 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
               const Text(
                 'Correct the draft below. Nothing becomes a medication until you continue and save the medicine form.',
               ),
+              if (_notice case final message?) ...[
+                const SizedBox(height: 12),
+                _StatusCard(icon: Icons.info_outline, message: message),
+              ],
+              if (_warnings.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _StatusCard(
+                  icon: Icons.warning_amber_rounded,
+                  message: _warnings.join('\n'),
+                ),
+              ],
               const SizedBox(height: 20),
               TextField(
                 key: const Key('ocr-medicine-name-input'),
@@ -133,6 +156,8 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
                 onPressed: () => setState(() {
                   _isReviewing = false;
                   _error = null;
+                  _notice = null;
+                  _warnings = const [];
                 }),
                 child: const Text('Choose another image'),
               ),
@@ -153,6 +178,8 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
   Future<void> _pickAndRecognize(ImageSource source) async {
     setState(() {
       _error = null;
+      _notice = null;
+      _warnings = const [];
       _isProcessing = true;
     });
     try {
@@ -162,16 +189,55 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
         maxWidth: 2400,
       );
       if (image == null) return;
-      final text = await widget.recognizer.recognize(image.path);
-      if (text.isEmpty) {
+      var localText = '';
+      try {
+        localText = await widget.recognizer.recognize(image.path);
+      } on Exception {
+        // Cloud OCR can still recover a draft when the local Latin preview fails.
+      }
+
+      if (!mounted) return;
+      final useCloud = await _requestCloudConsent();
+      if (!mounted) return;
+      PrescriptionExtractionDraft? cloudDraft;
+      if (useCloud) {
+        try {
+          cloudDraft = await widget.extractionGateway.extract(
+            accessToken: widget.accessToken,
+            imagePath: image.path,
+            localOcrText: localText,
+            profileId: widget.profileId,
+          );
+        } on PrescriptionExtractionFailure catch (failure) {
+          _notice = failure.message;
+        }
+      } else {
+        _notice =
+            'Cloud OCR was skipped. This review uses only the on-device preview.';
+      }
+
+      final text = cloudDraft?.rawText.trim().isNotEmpty ?? false
+          ? cloudDraft!.rawText
+          : localText;
+      if (text.trim().isEmpty && cloudDraft?.medicines.isEmpty != false) {
         setState(() {
           _error =
               'No readable text was found. Try a clearer image or enter it manually.';
         });
         return;
       }
+      final suggestedName = cloudDraft?.medicines
+          .map((candidate) => candidate.displayName.trim())
+          .firstWhere((name) => name.isNotEmpty, orElse: () => '');
       _sourceText.text = text;
-      _medicineName.text = _firstUsefulLine(text);
+      _medicineName.text = suggestedName?.isNotEmpty ?? false
+          ? suggestedName!
+          : _firstUsefulLine(text);
+      _warnings = cloudDraft?.warnings ?? const [];
+      if (cloudDraft != null) {
+        _notice =
+            'Cloud OCR draft created (${cloudDraft.language.toLowerCase()}). It has not changed your medication list.';
+      }
       setState(() => _isReviewing = true);
     } on Exception {
       setState(() {
@@ -188,6 +254,8 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
     _medicineName.clear();
     setState(() {
       _error = null;
+      _notice = 'Manual entry selected. Check the prescription carefully.';
+      _warnings = const [];
       _isReviewing = true;
     });
   }
@@ -212,4 +280,53 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
       .split(RegExp(r'\r?\n'))
       .map((line) => line.trim())
       .firstWhere((line) => line.length >= 2, orElse: () => '');
+
+  Future<bool> _requestCloudConsent() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Use cloud OCR?'),
+        content: const Text(
+          'For better Bangla and handwriting recognition, this prescription image will be securely sent to the OCR providers configured by the CareMate server. It is used only to create a draft for your review.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('On-device only'),
+          ),
+          FilledButton(
+            key: const Key('allow-cloud-ocr-button'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Use cloud OCR'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 10),
+        Expanded(child: Text(message)),
+      ],
+    ),
+  );
 }

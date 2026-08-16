@@ -7,6 +7,8 @@ import 'package:caremate/features/medications/data/http_patient_medication_gatew
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/presentation/authenticated_experience.dart';
 import 'package:caremate/features/prescription/data/mlkit_prescription_text_recognizer.dart';
+import 'package:caremate/features/prescription/data/http_prescription_extraction_gateway.dart';
+import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
 import 'package:flutter/material.dart';
 
@@ -14,12 +16,14 @@ class CareMateApp extends StatefulWidget {
   const CareMateApp({
     this.authCoordinator,
     this.patientMedicationGateway,
+    this.prescriptionExtractionGateway,
     this.prescriptionTextRecognizer,
     super.key,
   });
 
   final AuthCoordinator? authCoordinator;
   final PatientMedicationGateway? patientMedicationGateway;
+  final PrescriptionExtractionGateway? prescriptionExtractionGateway;
   final PrescriptionTextRecognizer? prescriptionTextRecognizer;
 
   @override
@@ -30,6 +34,7 @@ class _CareMateAppState extends State<CareMateApp> {
   late final AuthCoordinator _authCoordinator;
   late final bool _ownsCoordinator;
   late final PatientMedicationGateway _patientMedicationGateway;
+  late final PrescriptionExtractionGateway _prescriptionExtractionGateway;
   late final PrescriptionTextRecognizer _prescriptionTextRecognizer;
 
   @override
@@ -50,6 +55,14 @@ class _CareMateAppState extends State<CareMateApp> {
     _patientMedicationGateway =
         widget.patientMedicationGateway ??
         HttpPatientMedicationGateway(
+          baseUrl: const String.fromEnvironment(
+            'API_BASE_URL',
+            defaultValue: 'http://10.0.2.2:3000/api/v1',
+          ),
+        );
+    _prescriptionExtractionGateway =
+        widget.prescriptionExtractionGateway ??
+        HttpPrescriptionExtractionGateway(
           baseUrl: const String.fromEnvironment(
             'API_BASE_URL',
             defaultValue: 'http://10.0.2.2:3000/api/v1',
@@ -82,6 +95,7 @@ class _CareMateAppState extends State<CareMateApp> {
             accessToken: _authCoordinator.session!.accessToken,
             gateway: _patientMedicationGateway,
             onLogout: _authCoordinator.logout,
+            prescriptionExtractionGateway: _prescriptionExtractionGateway,
             prescriptionTextRecognizer: _prescriptionTextRecognizer,
           ),
           AuthStatus.signedOut ||

@@ -2,6 +2,7 @@ import 'package:caremate/features/medications/application/patient_medication_coo
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/presentation/profile_setup_page.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
+import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/shell/presentation/app_shell.dart';
 import 'package:flutter/material.dart';
 
@@ -10,6 +11,7 @@ class AuthenticatedExperience extends StatefulWidget {
     required this.accessToken,
     required this.gateway,
     required this.onLogout,
+    required this.prescriptionExtractionGateway,
     required this.prescriptionTextRecognizer,
     super.key,
   });
@@ -17,6 +19,7 @@ class AuthenticatedExperience extends StatefulWidget {
   final String accessToken;
   final PatientMedicationGateway gateway;
   final Future<void> Function() onLogout;
+  final PrescriptionExtractionGateway prescriptionExtractionGateway;
   final PrescriptionTextRecognizer prescriptionTextRecognizer;
 
   @override
@@ -56,6 +59,7 @@ class _AuthenticatedExperienceState extends State<AuthenticatedExperience> {
         PatientMedicationStatus.ready => AppShell(
           medicationCoordinator: _coordinator,
           onLogout: widget.onLogout,
+          prescriptionExtractionGateway: widget.prescriptionExtractionGateway,
           prescriptionTextRecognizer: widget.prescriptionTextRecognizer,
         ),
         PatientMedicationStatus.error => Scaffold(

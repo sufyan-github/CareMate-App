@@ -6,6 +6,7 @@ import 'package:caremate/features/medications/presentation/medications_page.dart
 import 'package:caremate/features/more/presentation/more_page.dart';
 import 'package:caremate/features/notifications/presentation/notifications_page.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
+import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/prescription/presentation/prescription_scan_page.dart';
 import 'package:caremate/features/today/presentation/today_page.dart';
 import 'package:flutter/material.dart';
@@ -14,12 +15,14 @@ class AppShell extends StatefulWidget {
   const AppShell({
     required this.medicationCoordinator,
     required this.onLogout,
+    required this.prescriptionExtractionGateway,
     required this.prescriptionTextRecognizer,
     super.key,
   });
 
   final PatientMedicationCoordinator medicationCoordinator;
   final Future<void> Function() onLogout;
+  final PrescriptionExtractionGateway prescriptionExtractionGateway;
   final PrescriptionTextRecognizer prescriptionTextRecognizer;
 
   @override
@@ -113,8 +116,12 @@ class _AppShellState extends State<AppShell> {
     final result = await Navigator.push<PrescriptionDraftResult>(
       context,
       MaterialPageRoute<PrescriptionDraftResult>(
-        builder: (_) =>
-            PrescriptionScanPage(recognizer: widget.prescriptionTextRecognizer),
+        builder: (_) => PrescriptionScanPage(
+          accessToken: widget.medicationCoordinator.accessToken,
+          extractionGateway: widget.prescriptionExtractionGateway,
+          profileId: widget.medicationCoordinator.profile!.id,
+          recognizer: widget.prescriptionTextRecognizer,
+        ),
       ),
     );
     if (!mounted || result == null) return;

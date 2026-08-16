@@ -95,6 +95,25 @@ model PatientProfile {
   updatedAt    DateTime     @updatedAt
   owner        User         @relation(fields: [ownerUserId], references: [id])
   medications  Medication[]
+  ocrDrafts    OcrDraft[]
+}
+
+model OcrDraft {
+  id                String         @id
+  patientProfileId  String
+  status            String         @default("REVIEW_REQUIRED")
+  documentType      String
+  language          String
+  rawText           String
+  medicinesJson     String
+  warningsJson      String
+  provider          String
+  providerModel     String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  patientProfile    PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+
+  @@index([patientProfileId, createdAt])
 }
 
 model Medication {
