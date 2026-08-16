@@ -21,6 +21,7 @@ class MedicationDraft {
     required this.quantityValue,
     required this.route,
     this.notes,
+    this.sourceText,
     this.strengthUnit,
     this.strengthValue,
   });
@@ -32,6 +33,7 @@ class MedicationDraft {
   final String quantityUnit;
   final double quantityValue;
   final String route;
+  final String? sourceText;
   final String? strengthUnit;
   final double? strengthValue;
 }

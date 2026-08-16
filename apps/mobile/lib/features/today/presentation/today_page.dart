@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
 class TodayPage extends StatelessWidget {
-  const TodayPage({super.key});
+  const TodayPage({
+    required this.onAddCaregiver,
+    required this.onAddMedicine,
+    required this.onScanPrescription,
+    super.key,
+  });
+
+  final VoidCallback onAddCaregiver;
+  final VoidCallback onAddMedicine;
+  final VoidCallback onScanPrescription;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +41,7 @@ class TodayPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 const _ReadinessCard(),
                 const SizedBox(height: 16),
-                const _EmptyReminderCard(),
+                _EmptyReminderCard(onAddMedicine: onAddMedicine),
                 const SizedBox(height: 24),
                 Text(
                   'Quick actions',
@@ -41,17 +50,19 @@ class TodayPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Wrap(
+                Wrap(
                   spacing: 12,
                   runSpacing: 12,
                   children: [
                     _QuickAction(
                       icon: Icons.document_scanner_outlined,
                       label: 'Scan prescription',
+                      onPressed: onScanPrescription,
                     ),
                     _QuickAction(
                       icon: Icons.person_add_alt_1_outlined,
                       label: 'Add caregiver',
+                      onPressed: onAddCaregiver,
                     ),
                   ],
                 ),
@@ -110,7 +121,9 @@ class _ReadinessCard extends StatelessWidget {
 }
 
 class _EmptyReminderCard extends StatelessWidget {
-  const _EmptyReminderCard();
+  const _EmptyReminderCard({required this.onAddMedicine});
+
+  final VoidCallback onAddMedicine;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +155,7 @@ class _EmptyReminderCard extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
-              onPressed: () {},
+              onPressed: onAddMedicine,
               icon: const Icon(Icons.add),
               label: const Text('Add medicine'),
             ),
@@ -154,17 +167,22 @@ class _EmptyReminderCard extends StatelessWidget {
 }
 
 class _QuickAction extends StatelessWidget {
-  const _QuickAction({required this.icon, required this.label});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
 
   final IconData icon;
   final String label;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return ActionChip(
       avatar: Icon(icon, size: 20),
       label: Text(label),
-      onPressed: () {},
+      onPressed: onPressed,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
     );
   }

@@ -66,6 +66,7 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
           'quantityUnit': draft.quantityUnit,
           'quantityValue': draft.quantityValue,
           'route': draft.route,
+          if (draft.sourceText != null) 'sourceText': draft.sourceText,
         },
         if (draft.notes != null) 'notes': draft.notes,
         if (draft.strengthUnit != null) 'strengthUnit': draft.strengthUnit,

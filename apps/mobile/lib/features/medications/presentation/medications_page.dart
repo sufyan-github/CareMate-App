@@ -2,6 +2,24 @@ import 'package:caremate/features/medications/application/patient_medication_coo
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
 import 'package:flutter/material.dart';
 
+Future<void> showMedicationForm(
+  BuildContext context, {
+  required PatientMedicationCoordinator coordinator,
+  String initialName = '',
+  String? sourceText,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (context) => _MedicationForm(
+      coordinator: coordinator,
+      initialName: initialName,
+      sourceText: sourceText,
+    ),
+  );
+}
+
 class MedicationsPage extends StatelessWidget {
   const MedicationsPage({required this.coordinator, super.key});
 
@@ -28,7 +46,8 @@ class MedicationsPage extends StatelessWidget {
                     ),
                   ),
                   FilledButton.icon(
-                    onPressed: () => _showAddMedication(context),
+                    onPressed: () =>
+                        showMedicationForm(context, coordinator: coordinator),
                     icon: const Icon(Icons.add),
                     label: const Text('Add'),
                   ),
@@ -37,7 +56,10 @@ class MedicationsPage extends StatelessWidget {
               const SizedBox(height: 16),
               if (coordinator.medications.isEmpty)
                 Expanded(
-                  child: _EmptyState(onAdd: () => _showAddMedication(context)),
+                  child: _EmptyState(
+                    onAdd: () =>
+                        showMedicationForm(context, coordinator: coordinator),
+                  ),
                 )
               else
                 Expanded(
@@ -70,15 +92,6 @@ class MedicationsPage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _showAddMedication(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => _MedicationForm(coordinator: coordinator),
     );
   }
 }
@@ -126,9 +139,15 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _MedicationForm extends StatefulWidget {
-  const _MedicationForm({required this.coordinator});
+  const _MedicationForm({
+    required this.coordinator,
+    required this.initialName,
+    this.sourceText,
+  });
 
   final PatientMedicationCoordinator coordinator;
+  final String initialName;
+  final String? sourceText;
 
   @override
   State<_MedicationForm> createState() => _MedicationFormState();
@@ -136,12 +155,18 @@ class _MedicationForm extends StatefulWidget {
 
 class _MedicationFormState extends State<_MedicationForm> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
+  late final TextEditingController _name;
   final _strength = TextEditingController();
   final _strengthUnit = TextEditingController(text: 'mg');
   final _quantity = TextEditingController(text: '1');
   String _form = 'TABLET';
   String _meal = 'UNSPECIFIED';
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.initialName);
+  }
 
   @override
   void dispose() {
@@ -177,6 +202,17 @@ class _MedicationFormState extends State<_MedicationForm> {
               const Text(
                 'Copy the details from your medicine label or prescription.',
               ),
+              if (widget.sourceText != null) ...[
+                const SizedBox(height: 12),
+                const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Text(
+                      'This form was prefilled from an unverified OCR draft. Check every value before saving.',
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               TextFormField(
                 key: const Key('medication-name-input'),
@@ -281,6 +317,7 @@ class _MedicationFormState extends State<_MedicationForm> {
         quantityUnit: _form == 'SYRUP' ? 'ML' : _form,
         quantityValue: double.parse(_quantity.text),
         route: 'ORAL',
+        sourceText: widget.sourceText,
         strengthUnit: _strength.text.trim().isEmpty
             ? null
             : _strengthUnit.text.trim(),

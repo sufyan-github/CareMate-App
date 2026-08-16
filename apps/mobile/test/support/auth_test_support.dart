@@ -30,6 +30,7 @@ class InMemoryPatientMedicationGateway implements PatientMedicationGateway {
 
   PatientProfile? profile;
   final List<MedicationSummary> medications = [];
+  MedicationDraft? lastCreatedDraft;
 
   @override
   Future<PatientProfile> createProfile({
@@ -55,6 +56,7 @@ class InMemoryPatientMedicationGateway implements PatientMedicationGateway {
     required MedicationDraft draft,
     required String profileId,
   }) async {
+    lastCreatedDraft = draft;
     final medication = MedicationSummary(
       displayName: draft.displayName,
       form: draft.form,

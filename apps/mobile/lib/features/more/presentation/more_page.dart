@@ -1,3 +1,6 @@
+import 'package:caremate/features/more/presentation/devices_page.dart';
+import 'package:caremate/features/more/presentation/language_page.dart';
+import 'package:caremate/features/more/presentation/privacy_security_page.dart';
 import 'package:flutter/material.dart';
 
 class MorePage extends StatelessWidget {
@@ -17,27 +20,43 @@ class MorePage extends StatelessWidget {
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 16),
-        const Card(
+        Card(
           child: Column(
             children: [
               ListTile(
                 leading: Icon(Icons.translate),
-                title: Text('Language'),
-                subtitle: Text('বাংলা and English'),
-                trailing: Icon(Icons.chevron_right),
+                title: const Text('Language'),
+                subtitle: const Text('বাংলা and English'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(builder: (_) => const LanguagePage()),
+                ),
               ),
-              Divider(height: 1),
+              const Divider(height: 1),
               ListTile(
-                leading: Icon(Icons.devices_outlined),
-                title: Text('Devices and sessions'),
-                subtitle: Text('Review where you are signed in'),
-                trailing: Icon(Icons.chevron_right),
+                leading: const Icon(Icons.devices_outlined),
+                title: const Text('Devices and sessions'),
+                subtitle: const Text('Review where you are signed in'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => DevicesPage(onLogout: onLogout),
+                  ),
+                ),
               ),
-              Divider(height: 1),
+              const Divider(height: 1),
               ListTile(
-                leading: Icon(Icons.shield_outlined),
-                title: Text('Privacy and security'),
-                trailing: Icon(Icons.chevron_right),
+                leading: const Icon(Icons.shield_outlined),
+                title: const Text('Privacy and security'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PrivacySecurityPage(),
+                  ),
+                ),
               ),
             ],
           ),
