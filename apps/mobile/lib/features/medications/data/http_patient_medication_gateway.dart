@@ -106,7 +106,7 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
     } on Exception {
       throw const AuthFailure(
         'NETWORK_UNAVAILABLE',
-        'Could not connect. Check your internet and try again.',
+        'Could not reach the CareMate server. Make sure the API is running and try again.',
       );
     }
   }
