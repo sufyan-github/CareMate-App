@@ -10,6 +10,7 @@ describe("CareMate authentication", () => {
   let app: INestApplication | undefined;
 
   beforeEach(async () => {
+    process.env.NODE_ENV = "development";
     process.env.TURSO_DATABASE_URL = ":memory:";
     delete process.env.TURSO_AUTH_TOKEN;
     process.env.ACCESS_TOKEN_SECRET = "test-access-secret-that-is-long-enough";
@@ -94,6 +95,24 @@ describe("CareMate authentication", () => {
       400,
     );
     expect(replay.body.error.code).toBe("OTP_EXPIRED");
+  });
+
+  it("uses the labelled development adapter when no provider is configured", async () => {
+    delete process.env.LOGIN_OTP_PROVIDER;
+
+    const response = await requestOtp("01500123456").expect(201);
+
+    expect(response.body.meta.deliveryMode).toBe("DEVELOPMENT");
+    expect(JSON.stringify(response.body)).not.toContain("123456");
+  });
+
+  it("refuses an implicit development adapter in production", async () => {
+    delete process.env.LOGIN_OTP_PROVIDER;
+    process.env.NODE_ENV = "production";
+
+    const response = await requestOtp("01400123456").expect(503);
+
+    expect(response.body.error.code).toBe("DELIVERY_UNAVAILABLE");
   });
 
   it("invalidates an earlier challenge when a replacement is requested", async () => {

@@ -81,10 +81,9 @@ export class AuthService {
     });
 
     const challengeId = ulid();
-    const code =
-      this.config.get<string>("LOGIN_OTP_PROVIDER") === "development"
-        ? this.developmentOtp.code()
-        : randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const code = this.developmentOtp.isEnabled()
+      ? this.developmentOtp.code()
+      : randomInt(0, 1_000_000).toString().padStart(6, "0");
     const expiresAt = new Date(now.getTime() + OTP_LIFETIME_SECONDS * 1000);
     const resendAvailableAt = new Date(
       now.getTime() + resendAfterSeconds * 1000,

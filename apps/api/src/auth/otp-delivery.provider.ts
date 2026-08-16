@@ -23,8 +23,21 @@ export class DevelopmentOtpDeliveryProvider implements OtpDeliveryProvider {
     return this.config.get<string>("LOGIN_OTP_DEVELOPMENT_CODE") ?? "123456";
   }
 
+  isEnabled(): boolean {
+    const configuredProvider = this.config
+      .get<string>("LOGIN_OTP_PROVIDER")
+      ?.trim()
+      .toLowerCase();
+
+    if (configuredProvider) {
+      return configuredProvider === "development";
+    }
+
+    return this.config.get<string>("NODE_ENV") !== "production";
+  }
+
   async send(request: OtpDeliveryRequest): Promise<string> {
-    if (this.config.get<string>("LOGIN_OTP_PROVIDER") !== "development") {
+    if (!this.isEnabled()) {
       throw new Error(
         "No approved transactional login OTP provider configured",
       );
