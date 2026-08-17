@@ -25,16 +25,16 @@ Release evidence must include passing automated checks, a reproducible physical-
 
 ## Status overview
 
-| Theme                          | Status             | Current evidence                                                        | Competition gap                                                                           |
-| ------------------------------ | ------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Core medication lifecycle      | Done               | Medication, schedules, reminders, dose commands                         | Needs a tighter guided demo journey                                                       |
-| Offline reliability            | Done               | Encrypted local cache, mutation outbox, background retry                | Needs a one-tap rehearsal and visible sync proof                                          |
-| Prescription capture           | In progress        | ML Kit preview, cloud consent, provider abstraction, OpenAI structuring | Needs real provider secrets/evaluation and stronger review UX                             |
-| Family care                    | Done               | Invitations, permissions, read-only shared plans, revocation            | Needs judge-ready seeded two-person story                                                 |
-| Inventory and insight          | Done               | Immutable ledger, thresholds, run-out forecast, adherence indicator     | Needs clearer visual hierarchy and explanation                                            |
-| Localization and accessibility | At risk            | Locale preference and accessible Material components                    | Bangla copy and elderly-friendly presentation are incomplete                              |
-| Release operations             | At risk            | Tests and physical-device verification notes                            | No CI workflow, demo script, telemetry adapter, or release checklist                      |
-| Commercial integrations        | Blocked externally | Provider-neutral specification                                          | bKash, bdapps and production SMS require approval; exclude from competition critical path |
+| Theme                          | Status             | Current evidence                                                             | Competition gap                                                                           |
+| ------------------------------ | ------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Core medication lifecycle      | Done               | Medication, schedules, reminders, dose commands                              | Needs a tighter guided demo journey                                                       |
+| Offline reliability            | Done               | Encrypted local cache, mutation outbox, background retry                     | Needs a one-tap rehearsal and visible sync proof                                          |
+| Prescription capture           | In progress        | ML Kit preview, cloud consent, provider abstraction, OpenAI structuring      | Needs real provider secrets/evaluation and stronger review UX                             |
+| Family care                    | Done               | Invitations, permissions, read-only shared plans, revocation                 | Needs judge-ready seeded two-person story                                                 |
+| Inventory and insight          | Done               | Immutable ledger, thresholds, run-out forecast, adherence indicator          | Needs clearer visual hierarchy and explanation                                            |
+| Localization and accessibility | Competition ready  | Live Bangla critical path, larger-text preference, semantics, 48 dp controls | Native-language and older-adult review remain required before a pilot                     |
+| Release operations             | At risk            | Tests and physical-device verification notes                                 | No CI workflow, demo script, telemetry adapter, or release checklist                      |
+| Commercial integrations        | Blocked externally | Provider-neutral specification                                               | bKash, bdapps and production SMS require approval; exclude from competition critical path |
 
 ## Now: committed competition build
 
@@ -46,20 +46,23 @@ Release evidence must include passing automated checks, a reproducible physical-
 
 ### Segment 1 — Product direction and judging contract
 
-**Status:** In progress  
+**Status:** Completed
+
 **Outcome:** Fix scope, architecture, design priorities, demo success criteria, dependencies, and non-goals before UI expansion.  
 **Dependencies:** Existing specification and physical-device evidence.
 
 ### Segment 2 — Premium mobile experience and accessibility
 
-**Status:** Not started  
+**Status:** Completed
+
 **Outcome:** A consistent design system, stronger onboarding, clearer Today hierarchy, humane empty/error/offline states, minimum 48 dp touch targets, text scaling resilience, and screen-reader semantics.  
 **Dependencies:** Segment 1 design audit.  
 **Exit gate:** Flutter analysis and behavioral tests pass; key screens are visually reviewed at light/dark and large text.
 
 ### Segment 3 — Bangladesh-first demo journey
 
-**Status:** Not started  
+**Status:** Completed
+
 **Outcome:** Bangla/English parity for the critical path, elderly-friendly display preference, clearer OCR confidence/evidence review, and a deterministic caregiver demonstration.  
 **Dependencies:** Copy inventory and design tokens from Segment 2.  
 **Exit gate:** The five-minute judge journey works in English and Bangla without network-only assumptions.

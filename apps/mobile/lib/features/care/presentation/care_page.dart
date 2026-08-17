@@ -1,3 +1,4 @@
+import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:flutter/material.dart';
 
@@ -44,6 +45,7 @@ class _CarePageState extends State<CarePage> {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     final active = _invitations
         .where(
           (invitation) =>
@@ -59,21 +61,26 @@ class _CarePageState extends State<CarePage> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
             Text(
-              'Care circle',
+              copy.pick('Care circle', 'সহায়তার বৃত্ত'),
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Share only the information you choose with a trusted caregiver.',
+            Text(
+              copy.pick(
+                'Share only the information you choose with a trusted caregiver.',
+                'বিশ্বস্ত সহায়তাকারীর সঙ্গে শুধু আপনার বেছে নেওয়া তথ্য শেয়ার করুন।',
+              ),
             ),
             const SizedBox(height: 20),
             if (widget.canManage)
               FilledButton.icon(
                 onPressed: _invite,
                 icon: const Icon(Icons.person_add_alt_1_outlined),
-                label: const Text('Invite caregiver'),
+                label: Text(
+                  copy.pick('Invite caregiver', 'সহায়তাকারীকে আমন্ত্রণ'),
+                ),
               ),
             const SizedBox(height: 20),
             if (!widget.canManage)
@@ -197,11 +204,15 @@ class _InvitationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     final accepted = invitation.status == 'ACCEPTED';
     final permissions = <String>[
-      if (invitation.permissions.canViewMedicationPlan) 'View medication plan',
+      if (invitation.permissions.canViewMedicationPlan)
+        copy.pick('View medication plan', 'ওষুধের পরিকল্পনা দেখা'),
       if (invitation.permissions.canReceiveMissedDoseAlerts)
-        'Missed-dose alerts',
+        copy.pick('Missed-dose alerts', 'মিস ডোজের সতর্কতা'),
+      if (invitation.permissions.canViewDoseOutcomes)
+        copy.pick('View dose outcomes', 'ডোজের ফল দেখা'),
     ];
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -227,20 +238,31 @@ class _InvitationCard extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       Text(
-                        accepted ? 'Access accepted' : 'Waiting for acceptance',
+                        accepted
+                            ? copy.pick('Access accepted', 'অনুমতি গৃহীত')
+                            : copy.pick(
+                                'Waiting for acceptance',
+                                'গ্রহণের অপেক্ষায়',
+                              ),
                       ),
                     ],
                   ),
                 ),
-                TextButton(onPressed: onRevoke, child: const Text('Revoke')),
+                TextButton(
+                  onPressed: onRevoke,
+                  child: Text(copy.pick('Revoke', 'অনুমতি বাতিল')),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Text(permissions.join(' • ')),
             if (!accepted) ...[
               const SizedBox(height: 8),
-              const Text(
-                'The caregiver sees this invitation after signing in with the invited number.',
+              Text(
+                copy.pick(
+                  'Demo delivery: the caregiver sees this after signing in with the invited number. No SMS is sent.',
+                  'ডেমো ডেলিভারি: আমন্ত্রিত নম্বর দিয়ে সাইন ইন করলে সহায়তাকারী এটি দেখবেন। কোনো SMS পাঠানো হয় না।',
+                ),
               ),
             ],
           ],

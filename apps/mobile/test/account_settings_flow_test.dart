@@ -1,4 +1,5 @@
 import 'package:caremate/app/caremate_app.dart';
+import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,21 +16,29 @@ void main() {
         authCoordinator: authenticatedCoordinator(),
         careAccessGateway: emptyCareAccessGateway(),
         patientMedicationGateway: existingPatientGateway(),
+        preferencesController: CareMatePreferencesController(
+          store: _MemoryPreferenceStore(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Language'));
+    await tester.tap(find.byKey(const Key('language-settings-tile')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('বাংলা'));
     await tester.pumpAndSettle();
     expect(settings.preferences.locale, 'bn-BD');
+    expect(find.text('ভাষা ও প্রদর্শন'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('large-text-setting')));
+    await tester.pumpAndSettle();
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Devices and sessions'));
+    expect(find.text('সেটিংস ও সহায়তা'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('devices-settings-tile')));
+    await tester.tap(find.byKey(const Key('devices-settings-tile')));
     await tester.pumpAndSettle();
     expect(find.text('Other phone'), findsOneWidget);
     await tester.tap(find.widgetWithText(TextButton, 'Sign out'));
@@ -44,16 +53,18 @@ void main() {
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Privacy and security'));
+    await tester.ensureVisible(find.byKey(const Key('privacy-settings-tile')));
+    await tester.tap(find.byKey(const Key('privacy-settings-tile')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Share optional usage analytics'));
     await tester.pumpAndSettle();
     expect(settings.preferences.allowAnalytics, isTrue);
 
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const Key('request-account-deletion-button')),
+      240,
+      scrollable: find.byType(Scrollable).last,
     );
-    await tester.drag(find.byType(ListView).last, const Offset(0, -120));
     await tester.pumpAndSettle();
     tester
         .widget<OutlinedButton>(
@@ -74,6 +85,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(settings.deletionRequested, isTrue);
-    expect(find.text('Your medicines, right on time'), findsOneWidget);
+    expect(find.text('সঠিক সময়ে আপনার ওষুধ'), findsOneWidget);
   });
+}
+
+class _MemoryPreferenceStore implements CareMatePreferenceStore {
+  final Map<String, String> _values = {};
+
+  @override
+  Future<String?> read(String key) async => _values[key];
+
+  @override
+  Future<void> write(String key, String value) async {
+    _values[key] = value;
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:caremate/features/care/presentation/care_page.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/care/presentation/invite_caregiver_page.dart';
@@ -39,38 +40,38 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  static const _destinations = <NavigationDestination>[
-    NavigationDestination(
-      icon: Icon(Icons.today_outlined),
-      selectedIcon: Icon(Icons.today),
-      label: 'Today',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.medication_outlined),
-      selectedIcon: Icon(Icons.medication),
-      label: 'Medicines',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.people_outline),
-      selectedIcon: Icon(Icons.people),
-      label: 'Care',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.insights_outlined),
-      selectedIcon: Icon(Icons.insights),
-      label: 'Insights',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.more_horiz),
-      selectedIcon: Icon(Icons.more),
-      label: 'More',
-    ),
-  ];
-
   int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
+    final destinations = <NavigationDestination>[
+      NavigationDestination(
+        icon: Icon(Icons.today_outlined),
+        selectedIcon: Icon(Icons.today),
+        label: copy.pick('Today', 'আজ'),
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.medication_outlined),
+        selectedIcon: Icon(Icons.medication),
+        label: copy.pick('Medicines', 'ওষুধ'),
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.people_outline),
+        selectedIcon: Icon(Icons.people),
+        label: copy.pick('Care', 'সহায়তা'),
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.insights_outlined),
+        selectedIcon: Icon(Icons.insights),
+        label: copy.pick('Insights', 'তথ্য'),
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.more_horiz),
+        selectedIcon: Icon(Icons.more),
+        label: copy.pick('More', 'আরও'),
+      ),
+    ];
     final pages = <Widget>[
       TodayPage(
         canManage: widget.medicationCoordinator.profile!.canManage,
@@ -121,7 +122,7 @@ class _AppShellState extends State<AppShell> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Notifications',
+            tooltip: copy.pick('Notifications', 'নোটিফিকেশন'),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
@@ -138,7 +139,7 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        destinations: _destinations,
+        destinations: destinations,
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
         },
@@ -183,9 +184,12 @@ class _AppShellState extends State<AppShell> {
     );
     if (created == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Invitation created. It will appear when the caregiver signs in with the invited number.',
+            CareMateStrings.of(context).pick(
+              'Invitation created. It will appear when the caregiver signs in with the invited number.',
+              'আমন্ত্রণ তৈরি হয়েছে। আমন্ত্রিত ব্যক্তি এই নম্বর দিয়ে সাইন ইন করলে এটি দেখতে পাবেন।',
+            ),
           ),
         ),
       );

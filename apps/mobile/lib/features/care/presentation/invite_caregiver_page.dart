@@ -1,3 +1,5 @@
+import 'package:caremate/app/preferences/caremate_preferences.dart';
+import 'package:caremate/app/widgets/caremate_status_card.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:flutter/material.dart';
 
@@ -34,36 +36,50 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Invite caregiver')),
+      appBar: AppBar(
+        title: Text(copy.pick('Invite caregiver', 'সহায়তাকারীকে আমন্ত্রণ')),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
-              const Text(
-                'The recipient must accept before access starts. In this testing build, the invitation appears after they sign in to CareMate with this number; SMS delivery is not enabled.',
+              CareMateStatusCard(
+                icon: Icons.lock_person_outlined,
+                message: copy.pick(
+                  'Access starts only after acceptance. In this demo build, the invitation appears after this number signs in; no SMS is sent.',
+                  'গ্রহণ করার পরেই অনুমতি চালু হবে। এই ডেমো বিল্ডে নম্বরটি দিয়ে সাইন ইন করলে আমন্ত্রণ দেখা যাবে; কোনো SMS পাঠানো হবে না।',
+                ),
+                title: copy.pick('Consent first', 'আগে সম্মতি'),
               ),
               const SizedBox(height: 20),
               TextFormField(
                 key: const Key('caregiver-phone-input'),
                 controller: _phone,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Caregiver mobile number',
+                decoration: InputDecoration(
+                  labelText: copy.pick(
+                    'Caregiver mobile number',
+                    'সহায়তাকারীর মোবাইল নম্বর',
+                  ),
                   prefixText: '+88 ',
                 ),
                 validator: (value) {
                   final digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
                   return RegExp(r'^01[3-9]\d{8}$').hasMatch(digits)
                       ? null
-                      : 'Enter a valid Bangladesh mobile number';
+                      : copy.pick(
+                          'Enter a valid Bangladesh mobile number',
+                          'সঠিক বাংলাদেশি মোবাইল নম্বর লিখুন',
+                        );
                 },
               ),
               const SizedBox(height: 22),
               Text(
-                'Permissions',
+                copy.pick('Permissions', 'অনুমতিসমূহ'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -75,8 +91,18 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
                   _canViewPlan = value ?? false;
                   if (!_canViewPlan) _canViewDoseOutcomes = false;
                 }),
-                title: const Text('View confirmed medication plan'),
-                subtitle: const Text('Does not allow changing medicines'),
+                title: Text(
+                  copy.pick(
+                    'View confirmed medication plan',
+                    'নিশ্চিত করা ওষুধের পরিকল্পনা দেখুন',
+                  ),
+                ),
+                subtitle: Text(
+                  copy.pick(
+                    'Does not allow changing medicines',
+                    'ওষুধ পরিবর্তনের অনুমতি দেয় না',
+                  ),
+                ),
               ),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -85,9 +111,17 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
                     ? null
                     : (value) =>
                           setState(() => _canViewDoseOutcomes = value ?? false),
-                title: const Text('View reported dose outcomes'),
-                subtitle: const Text(
-                  'Shows confirmed, skipped, and missed app records',
+                title: Text(
+                  copy.pick(
+                    'View reported dose outcomes',
+                    'রিপোর্ট করা ডোজের ফল দেখুন',
+                  ),
+                ),
+                subtitle: Text(
+                  copy.pick(
+                    'Shows confirmed, skipped, and missed app records',
+                    'নিশ্চিত, বাদ দেওয়া ও মিস হওয়া অ্যাপ রেকর্ড দেখায়',
+                  ),
                 ),
               ),
               CheckboxListTile(
@@ -96,22 +130,42 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
                 onChanged: (value) => setState(
                   () => _canReceiveMissedDoseAlerts = value ?? false,
                 ),
-                title: const Text('Receive missed-dose alerts'),
-                subtitle: const Text('Available after reminders are enabled'),
+                title: Text(
+                  copy.pick(
+                    'Receive missed-dose alerts',
+                    'মিস হওয়া ডোজের সতর্কতা পান',
+                  ),
+                ),
+                subtitle: Text(
+                  copy.pick(
+                    'Available after reminders are enabled',
+                    'রিমাইন্ডার চালু হলে পাওয়া যাবে',
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               FilledButton(
                 key: const Key('send-caregiver-invitation-button'),
                 onPressed: _isSaving ? null : _submit,
                 child: Text(
-                  _isSaving ? 'Creating invitation…' : 'Create invitation',
+                  _isSaving
+                      ? copy.pick(
+                          'Creating invitation…',
+                          'আমন্ত্রণ তৈরি হচ্ছে…',
+                        )
+                      : copy.pick('Review invitation', 'আমন্ত্রণ যাচাই করুন'),
                 ),
               ),
               if (_error case final message?) ...[
                 const SizedBox(height: 12),
-                Text(
-                  message,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                CareMateStatusCard(
+                  liveRegion: true,
+                  message: message,
+                  title: copy.pick(
+                    'Could not create invitation',
+                    'আমন্ত্রণ তৈরি হয়নি',
+                  ),
+                  tone: CareMateStatusTone.error,
                 ),
               ],
             ],
@@ -124,9 +178,16 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_canViewPlan && !_canReceiveMissedDoseAlerts) {
-      setState(() => _error = 'Choose at least one caregiver permission.');
+      final copy = CareMateStrings.of(context);
+      setState(
+        () => _error = copy.pick(
+          'Choose at least one caregiver permission.',
+          'সহায়তাকারীর জন্য অন্তত একটি অনুমতি বেছে নিন।',
+        ),
+      );
       return;
     }
+    if (!await _confirmInvitation()) return;
     setState(() {
       _error = null;
       _isSaving = true;
@@ -148,5 +209,43 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<bool> _confirmInvitation() async {
+    final copy = CareMateStrings.of(context);
+    final permissions = <String>[
+      if (_canViewPlan)
+        copy.pick('View medication plan', 'ওষুধের পরিকল্পনা দেখা'),
+      if (_canViewDoseOutcomes)
+        copy.pick('View dose outcomes', 'ডোজের ফল দেখা'),
+      if (_canReceiveMissedDoseAlerts)
+        copy.pick('Receive missed-dose alerts', 'মিস ডোজের সতর্কতা পাওয়া'),
+    ];
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          copy.pick('Create this invitation?', 'এই আমন্ত্রণ তৈরি করবেন?'),
+        ),
+        content: Text(
+          copy.pick(
+            'Invited number: +88 ${_phone.text.trim()}\n\nShared permissions:\n• ${permissions.join('\n• ')}\n\nNo access starts until the recipient accepts.',
+            'আমন্ত্রিত নম্বর: +88 ${_phone.text.trim()}\n\nযে অনুমতিগুলো শেয়ার হবে:\n• ${permissions.join('\n• ')}\n\nগ্রহণ না করা পর্যন্ত কোনো অনুমতি চালু হবে না।',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(copy.pick('Go back', 'ফিরে যান')),
+          ),
+          FilledButton(
+            key: const Key('confirm-caregiver-invitation-button'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(copy.pick('Create invitation', 'আমন্ত্রণ তৈরি করুন')),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 }

@@ -1,4 +1,5 @@
 import 'package:caremate/app/design/caremate_tokens.dart';
+import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:caremate/app/widgets/caremate_empty_state.dart';
 import 'package:caremate/app/widgets/caremate_status_card.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
@@ -45,6 +46,7 @@ class TodayPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     final textTheme = Theme.of(context).textTheme;
 
     return SafeArea(
@@ -57,14 +59,17 @@ class TodayPage extends StatelessWidget {
             sliver: SliverList.list(
               children: [
                 Text(
-                  "Today's care",
+                  copy.pick("Today's care", 'আজকের যত্ন'),
                   style: textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Your medicine plan and family support, in one calm place.',
+                  copy.pick(
+                    'Your medicine plan and family support, in one calm place.',
+                    'আপনার ওষুধের পরিকল্পনা ও পরিবারের সহায়তা—এক জায়গায়।',
+                  ),
                   style: textTheme.bodyLarge?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -100,7 +105,7 @@ class TodayPage extends StatelessWidget {
                 if (canManage) ...[
                   const SizedBox(height: 24),
                   Text(
-                    'Quick actions',
+                    copy.pick('Quick actions', 'দ্রুত কাজ'),
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -112,12 +117,15 @@ class TodayPage extends StatelessWidget {
                     children: [
                       _QuickAction(
                         icon: Icons.document_scanner_outlined,
-                        label: 'Scan prescription',
+                        label: copy.pick(
+                          'Scan prescription',
+                          'প্রেসক্রিপশন স্ক্যান',
+                        ),
                         onPressed: onScanPrescription,
                       ),
                       _QuickAction(
                         icon: Icons.person_add_alt_1_outlined,
-                        label: 'Add caregiver',
+                        label: copy.pick('Add caregiver', 'সহায়তাকারী যোগ'),
                         onPressed: onAddCaregiver,
                       ),
                     ],
@@ -145,11 +153,12 @@ class _OccurrenceList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Today's doses",
+          copy.pick("Today's doses", 'আজকের ডোজ'),
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -200,6 +209,7 @@ class _DoseOccurrenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     final colors = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
@@ -249,7 +259,9 @@ class _DoseOccurrenceCard extends StatelessWidget {
                 onPressed: () => _runAction(context, DoseAction.confirm),
                 icon: const Icon(Icons.check_circle_outline),
                 label: Text(
-                  occurrence.status == 'MISSED' ? 'Confirm late' : 'Confirm',
+                  occurrence.status == 'MISSED'
+                      ? copy.pick('Confirm late', 'দেরিতে নিশ্চিত করুন')
+                      : copy.pick('Confirm', 'নিশ্চিত করুন'),
                 ),
               ),
               if (_canSnooze || _canSkip) ...[
@@ -267,13 +279,13 @@ class _DoseOccurrenceCard extends StatelessWidget {
                           DoseAction.snooze,
                           snoozeMinutes: 10,
                         ),
-                        child: const Text('Snooze 10 min'),
+                        child: Text(copy.pick('Snooze 10 min', '১০ মিনিট পরে')),
                       ),
                     if (_canSkip)
                       TextButton(
                         key: Key('skip-dose-${occurrence.id}'),
                         onPressed: () => _confirmSkip(context),
-                        child: const Text('Skip'),
+                        child: Text(copy.pick('Skip', 'বাদ দিন')),
                       ),
                   ],
                 ),
@@ -514,15 +526,29 @@ class _EmptyReminderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     return CareMateEmptyState(
       actionIcon: Icons.add,
-      actionLabel: canManage ? 'Add medicine' : null,
+      actionLabel: canManage
+          ? copy.pick('Add medicine', 'ওষুধ যোগ করুন')
+          : null,
       icon: Icons.medication_outlined,
       message: canManage
-          ? 'Add a medicine manually or scan a prescription. You will review every detail before reminders start.'
-          : 'You can view the confirmed medication plan. Only the patient can add or change medicines.',
+          ? copy.pick(
+              'Add a medicine manually or scan a prescription. You will review every detail before reminders start.',
+              'নিজে ওষুধ যোগ করুন বা প্রেসক্রিপশন স্ক্যান করুন। রিমাইন্ডার চালুর আগে প্রতিটি তথ্য আপনি যাচাই করবেন।',
+            )
+          : copy.pick(
+              'You can view the confirmed medication plan. Only the patient can add or change medicines.',
+              'আপনি নিশ্চিত করা ওষুধের পরিকল্পনা দেখতে পারবেন। শুধু রোগী ওষুধ যোগ বা পরিবর্তন করতে পারবেন।',
+            ),
       onAction: canManage ? onAddMedicine : null,
-      title: canManage ? 'No medicine reminders yet' : 'Shared care access',
+      title: canManage
+          ? copy.pick(
+              'No medicine reminders yet',
+              'এখনও কোনো ওষুধ রিমাইন্ডার নেই',
+            )
+          : copy.pick('Shared care access', 'শেয়ার করা যত্নের অনুমতি'),
     );
   }
 }

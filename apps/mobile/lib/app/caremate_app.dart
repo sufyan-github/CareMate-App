@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:caremate/app/theme/caremate_theme.dart';
 import 'package:caremate/features/auth/application/auth_coordinator.dart';
 import 'package:caremate/features/auth/data/http_auth_gateway.dart';
@@ -42,6 +45,7 @@ class CareMateApp extends StatefulWidget {
     this.doseSyncGateway,
     this.prescriptionExtractionGateway,
     this.prescriptionTextRecognizer,
+    this.preferencesController,
     this.reminderScheduler,
     super.key,
   });
@@ -56,6 +60,7 @@ class CareMateApp extends StatefulWidget {
   final DoseSyncGateway? doseSyncGateway;
   final PrescriptionExtractionGateway? prescriptionExtractionGateway;
   final PrescriptionTextRecognizer? prescriptionTextRecognizer;
+  final CareMatePreferencesController? preferencesController;
   final ReminderScheduler? reminderScheduler;
 
   @override
@@ -74,12 +79,19 @@ class _CareMateAppState extends State<CareMateApp> {
   late final InsightsGateway _insightsGateway;
   late final PrescriptionExtractionGateway _prescriptionExtractionGateway;
   late final PrescriptionTextRecognizer _prescriptionTextRecognizer;
+  late final CareMatePreferencesController _preferencesController;
   late final ReminderScheduler _reminderScheduler;
+  late final bool _ownsPreferencesController;
+  String? _loadedPreferencesForUser;
   CareMateLocalDatabase? _inMemoryDatabase;
 
   @override
   void initState() {
     super.initState();
+    _ownsPreferencesController = widget.preferencesController == null;
+    _preferencesController =
+        widget.preferencesController ?? CareMatePreferencesController();
+    unawaited(_preferencesController.initialize());
     _accountSettingsGateway =
         widget.accountSettingsGateway ??
         HttpAccountSettingsGateway(
@@ -109,6 +121,7 @@ class _CareMateAppState extends State<CareMateApp> {
           refreshLock: const FileRefreshSessionLock(),
           sessionStore: SecureSessionStore(),
         );
+    _authCoordinator.addListener(_handleAuthStatus);
     _patientMedicationGateway =
         widget.patientMedicationGateway ??
         HttpPatientMedicationGateway(
@@ -165,7 +178,9 @@ class _CareMateAppState extends State<CareMateApp> {
 
   @override
   void dispose() {
+    _authCoordinator.removeListener(_handleAuthStatus);
     if (_ownsCoordinator) _authCoordinator.dispose();
+    if (_ownsPreferencesController) _preferencesController.dispose();
     _inMemoryDatabase?.close();
     super.dispose();
   }
@@ -193,6 +208,26 @@ class _CareMateAppState extends State<CareMateApp> {
       theme: CareMateTheme.light,
       darkTheme: CareMateTheme.dark,
       themeMode: ThemeMode.system,
+      builder: (context, child) => AnimatedBuilder(
+        animation: _preferencesController,
+        child: child,
+        builder: (context, child) {
+          final media = MediaQuery.of(context);
+          final currentScale = media.textScaler.scale(1);
+          final scale = _preferencesController.largeText
+              ? currentScale < 1.25
+                    ? 1.25
+                    : currentScale
+              : currentScale;
+          return CareMatePreferencesScope(
+            controller: _preferencesController,
+            child: MediaQuery(
+              data: media.copyWith(textScaler: TextScaler.linear(scale)),
+              child: child!,
+            ),
+          );
+        },
+      ),
       home: AnimatedBuilder(
         animation: _authCoordinator,
         builder: (context, _) => switch (_authCoordinator.status) {
@@ -225,6 +260,31 @@ class _CareMateAppState extends State<CareMateApp> {
   Future<String> _currentAccessToken() async =>
       (await _authCoordinator.sessionStore.readSession())?.accessToken ??
       _authCoordinator.session!.accessToken;
+
+  void _handleAuthStatus() {
+    final session = _authCoordinator.session;
+    if (_authCoordinator.status != AuthStatus.signedIn || session == null) {
+      return;
+    }
+    if (_loadedPreferencesForUser == session.userId) return;
+    _loadedPreferencesForUser = session.userId;
+    unawaited(_loadAccountLocale(session.accessToken, session.userId));
+  }
+
+  Future<void> _loadAccountLocale(String accessToken, String userId) async {
+    try {
+      final preferences = await _accountSettingsGateway.getPreferences(
+        accessToken,
+      );
+      if (_loadedPreferencesForUser != userId) return;
+      await _preferencesController.setLocale(
+        preferences.locale,
+        persist: false,
+      );
+    } on Object {
+      // Device locale and locally saved preferences keep the app usable offline.
+    }
+  }
 }
 
 class _RestoringSessionPage extends StatelessWidget {
