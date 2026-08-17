@@ -27,6 +27,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @caremate/api prisma:generate
       - run: pnpm --filter @caremate/api typecheck
       - run: pnpm --filter @caremate/api test
       - run: pnpm --filter @caremate/api test:integration
