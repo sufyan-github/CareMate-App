@@ -16,4 +16,26 @@ abstract interface class PatientMedicationGateway {
     required MedicationDraft draft,
     required String profileId,
   });
+  Future<MedicationSchedulePlan> createSchedule({
+    required String accessToken,
+    required String activation,
+    required MedicationScheduleDraft draft,
+    required String medicationId,
+  });
+  Future<List<DoseOccurrenceSummary>> listDoseOccurrences({
+    required String accessToken,
+    required DateTime from,
+    required String profileId,
+    required DateTime to,
+  });
+  Future<MedicationScheduleSummary> updateSchedule({
+    required String accessToken,
+    required MedicationScheduleDraft draft,
+    required MedicationScheduleSummary schedule,
+  });
+  Future<MedicationScheduleSummary> commandSchedule({
+    required String accessToken,
+    required ScheduleAction action,
+    required MedicationScheduleSummary schedule,
+  });
 }

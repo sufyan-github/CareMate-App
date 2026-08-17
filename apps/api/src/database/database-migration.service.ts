@@ -45,7 +45,9 @@ export class DatabaseMigrationService implements OnModuleInit {
         "utf8",
       );
       const statements = sql
-        .split(";")
+        .split(
+          /;\s*(?=(?:(?:--[^\n]*\n)\s*)*(?:CREATE|ALTER|UPDATE|INSERT|DROP|PRAGMA)\b|$)/gi,
+        )
         .map((statement) => statement.trim())
         .filter((statement) => statement.length > 0);
 

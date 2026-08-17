@@ -20,6 +20,13 @@ CareMate is a Bangladesh-first medication-support and family-care platform speci
 - Patient profile onboarding with timezone-aware, versioned updates
 - Owner-authorized medication records and explicit dose instructions
 - Mobile medication entry and list experience backed by the API
+- Deterministic daily or selected-weekday schedule preview with skipped dates,
+  quantity planning, explicit activation, rolling open-ended Dose Occurrences,
+  and timezone-correct UTC conversion
+- Versioned schedule editing plus pause, resume, and end controls that preserve
+  historical occurrences and only replace eligible future Dose Occurrences
+- Separate caregiver permissions for medication-plan timing and private
+  self-reported dose outcomes
 - Prescription capture with on-device fallback, explicit cloud consent,
   Bangladesh-capable Document AI integration, evidence-bound OpenAI
   structuring, image validation, and mandatory human review
@@ -79,11 +86,14 @@ With `.env.example` development defaults, enter any valid Bangladesh mobile
 number and use OTP `123456`. Then verify these flows:
 
 1. Create a patient profile and add a medicine.
-2. Scan a prescription, choose on-device or consented cloud OCR, review the
+2. Open the medicine, choose the schedule dates and confirmed dose times,
+   preview the occurrence count and required quantity, then activate it. Verify
+   the dose appears on Today and that pause, resume, edit, and end work.
+3. Scan a prescription, choose on-device or consented cloud OCR, review the
    draft, and confirm that nothing is saved before the medication form.
-3. Create a caregiver invitation for a different phone number. Sign in as that
+4. Create a caregiver invitation for a different phone number. Sign in as that
    number, accept it, verify the plan is read-only, then revoke access as owner.
-4. In More, change language/privacy preferences, inspect actual sessions,
+5. In More, change language/privacy preferences, inspect actual sessions,
    revoke another device, and verify the guarded deletion confirmation.
 
 The debug APK is written to

@@ -27,12 +27,23 @@ export class CareAccessService {
     const profile = await this.ownedProfile(userId, patientProfileId);
     if (
       !input.permissions.canViewMedicationPlan &&
-      !input.permissions.canReceiveMissedDoseAlerts
+      !input.permissions.canReceiveMissedDoseAlerts &&
+      !input.permissions.canViewDoseOutcomes
     ) {
       throw new AuthError(
         HttpStatus.BAD_REQUEST,
         "CARE_PERMISSION_REQUIRED",
         "Choose at least one caregiver permission.",
+      );
+    }
+    if (
+      input.permissions.canViewDoseOutcomes &&
+      !input.permissions.canViewMedicationPlan
+    ) {
+      throw new AuthError(
+        HttpStatus.BAD_REQUEST,
+        "CARE_PERMISSION_DEPENDENCY_INVALID",
+        "Medication plan access is required before sharing dose outcomes.",
       );
     }
     const phone = normalizeBangladeshPhoneNumber(input.phoneNumber);

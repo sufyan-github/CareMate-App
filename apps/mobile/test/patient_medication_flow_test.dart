@@ -98,4 +98,115 @@ void main() {
     expect(find.text('Shared medicines'), findsOneWidget);
     expect(find.text('No shared medicines'), findsOneWidget);
   });
+
+  testWidgets(
+    'previews and activates a medicine schedule from a friendly flow',
+    (tester) async {
+      final patientGateway = existingPatientGateway();
+      patientGateway.medications.add(
+        const MedicationSummary(
+          displayName: 'Napa',
+          form: 'TABLET',
+          id: 'medication-1',
+          quantityLabel: '1 tablet',
+          status: 'ACTIVE',
+          strengthLabel: '500 mg',
+        ),
+      );
+      await tester.pumpWidget(
+        CareMateApp(
+          authCoordinator: authenticatedCoordinator(),
+          careAccessGateway: emptyCareAccessGateway(),
+          patientMedicationGateway: patientGateway,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Medicines'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Napa'));
+      await tester.pumpAndSettle();
+      expect(find.text('Set medication schedule'), findsOneWidget);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -420));
+      await tester.pumpAndSettle();
+      expect(find.text('8:00 AM'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('preview-schedule-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Review before activation'), findsOneWidget);
+      expect(find.textContaining('1 tablet needed'), findsOneWidget);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -240));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('activate-schedule-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Medication schedule active'), findsOneWidget);
+
+      await tester.tap(find.text('Today'));
+      await tester.pumpAndSettle();
+      expect(find.text('Napa'), findsOneWidget);
+      expect(find.textContaining('8:00 AM'), findsOneWidget);
+
+      await tester.tap(find.text('Medicines'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Napa'));
+      await tester.pumpAndSettle();
+      expect(find.text('Manage medication schedule'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('pause-schedule-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Paused'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('resume-schedule-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Active'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('end-schedule-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('End this schedule?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'End schedule'));
+      await tester.pumpAndSettle();
+      expect(find.text('Schedule ended'), findsOneWidget);
+    },
+  );
+
+  testWidgets('supports a selected-weekday medication schedule', (
+    tester,
+  ) async {
+    final patientGateway = existingPatientGateway();
+    patientGateway.medications.add(
+      const MedicationSummary(
+        displayName: 'Weekly medicine',
+        form: 'TABLET',
+        id: 'weekly-medication',
+        quantityLabel: '1 tablet',
+        status: 'ACTIVE',
+        strengthLabel: 'Strength not specified',
+      ),
+    );
+    await tester.pumpWidget(
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        careAccessGateway: emptyCareAccessGateway(),
+        patientMedicationGateway: patientGateway,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Medicines'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Weekly medicine'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Every day'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Selected weekdays').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Mon'), findsOneWidget);
+    expect(find.text('Sun'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -520));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('preview-schedule-button')));
+    await tester.pumpAndSettle();
+
+    expect(patientGateway.lastScheduleDraft?.recurrence, 'WEEKLY');
+    expect(patientGateway.lastScheduleDraft?.daysOfWeek, isNotEmpty);
+  });
 }

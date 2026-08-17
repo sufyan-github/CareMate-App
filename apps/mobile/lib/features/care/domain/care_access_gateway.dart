@@ -2,14 +2,17 @@ class CarePermissions {
   const CarePermissions({
     required this.canReceiveMissedDoseAlerts,
     required this.canViewMedicationPlan,
+    this.canViewDoseOutcomes = false,
   });
 
   final bool canReceiveMissedDoseAlerts;
   final bool canViewMedicationPlan;
+  final bool canViewDoseOutcomes;
 
   Map<String, dynamic> toJson() => {
     'canReceiveMissedDoseAlerts': canReceiveMissedDoseAlerts,
     'canViewMedicationPlan': canViewMedicationPlan,
+    'canViewDoseOutcomes': canViewDoseOutcomes,
   };
 
   factory CarePermissions.fromJson(Map<String, dynamic> json) =>
@@ -17,6 +20,7 @@ class CarePermissions {
         canReceiveMissedDoseAlerts:
             json['canReceiveMissedDoseAlerts'] as bool? ?? false,
         canViewMedicationPlan: json['canViewMedicationPlan'] as bool? ?? false,
+        canViewDoseOutcomes: json['canViewDoseOutcomes'] as bool? ?? false,
       );
 }
 

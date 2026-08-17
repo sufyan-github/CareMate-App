@@ -212,6 +212,8 @@ class InMemoryPatientMedicationGateway implements PatientMedicationGateway {
   PatientProfile? profile;
   final List<MedicationSummary> medications = [];
   MedicationDraft? lastCreatedDraft;
+  MedicationScheduleDraft? lastScheduleDraft;
+  MedicationSchedulePlan? activeSchedule;
 
   @override
   Future<PatientProfile> createProfile({
@@ -258,6 +260,136 @@ class InMemoryPatientMedicationGateway implements PatientMedicationGateway {
     required String accessToken,
     required String profileId,
   }) async => List.unmodifiable(medications);
+
+  @override
+  Future<MedicationSchedulePlan> createSchedule({
+    required String accessToken,
+    required String activation,
+    required MedicationScheduleDraft draft,
+    required String medicationId,
+  }) async {
+    lastScheduleDraft = draft;
+    final occurrence = ScheduleOccurrencePreview(
+      plannedAt: draft.startDate.add(const Duration(hours: 8)),
+      plannedLocalDateTime: '${_date(draft.startDate)}T${draft.times.first}',
+    );
+    final plan = MedicationSchedulePlan(
+      occurrences: [occurrence],
+      quantityRequired: 1,
+      quantityUnit: 'TABLET',
+      schedule: activation == 'ACTIVATE'
+          ? MedicationScheduleSummary(
+              daysOfWeek: draft.daysOfWeek,
+              endDate: draft.endDate,
+              excludedDates: draft.excludedDates,
+              id: 'schedule-1',
+              revision: 1,
+              recurrence: draft.recurrence,
+              startDate: draft.startDate,
+              status: 'ACTIVE',
+              times: draft.times,
+              timezone: draft.timezone,
+              version: 1,
+            )
+          : null,
+    );
+    if (activation == 'ACTIVATE') activeSchedule = plan;
+    return plan;
+  }
+
+  @override
+  Future<List<DoseOccurrenceSummary>> listDoseOccurrences({
+    required String accessToken,
+    required DateTime from,
+    required String profileId,
+    required DateTime to,
+  }) async {
+    final plan = activeSchedule;
+    if (plan == null) return const [];
+    return plan.occurrences
+        .map(
+          (occurrence) => DoseOccurrenceSummary(
+            id: 'occurrence-1',
+            medicationName: medications.first.displayName,
+            plannedAt: occurrence.plannedAt,
+            plannedLocalDateTime: occurrence.plannedLocalDateTime,
+            quantityLabel: '1 tablet',
+            status: 'SCHEDULED',
+            version: 1,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<MedicationScheduleSummary> updateSchedule({
+    required String accessToken,
+    required MedicationScheduleDraft draft,
+    required MedicationScheduleSummary schedule,
+  }) async {
+    final updated = MedicationScheduleSummary(
+      daysOfWeek: draft.daysOfWeek,
+      endDate: draft.endDate,
+      excludedDates: draft.excludedDates,
+      id: schedule.id,
+      revision: schedule.revision + 1,
+      recurrence: draft.recurrence,
+      startDate: draft.startDate,
+      status: 'ACTIVE',
+      times: draft.times,
+      timezone: draft.timezone,
+      version: schedule.version + 1,
+    );
+    _setActiveSchedule(updated);
+    return updated;
+  }
+
+  @override
+  Future<MedicationScheduleSummary> commandSchedule({
+    required String accessToken,
+    required ScheduleAction action,
+    required MedicationScheduleSummary schedule,
+  }) async {
+    final status = switch (action) {
+      ScheduleAction.pause => 'PAUSED',
+      ScheduleAction.resume => 'ACTIVE',
+      ScheduleAction.end => 'ENDED',
+    };
+    final updated = MedicationScheduleSummary(
+      daysOfWeek: schedule.daysOfWeek,
+      endDate: schedule.endDate,
+      excludedDates: schedule.excludedDates,
+      id: schedule.id,
+      revision: action == ScheduleAction.resume
+          ? schedule.revision + 1
+          : schedule.revision,
+      recurrence: schedule.recurrence,
+      startDate: schedule.startDate,
+      status: status,
+      times: schedule.times,
+      timezone: schedule.timezone,
+      version: schedule.version + 1,
+    );
+    if (status == 'ENDED') {
+      activeSchedule = null;
+    } else {
+      _setActiveSchedule(updated);
+    }
+    return updated;
+  }
+
+  void _setActiveSchedule(MedicationScheduleSummary schedule) {
+    final previous = activeSchedule;
+    activeSchedule = MedicationSchedulePlan(
+      occurrences: previous?.occurrences ?? const [],
+      quantityRequired: previous?.quantityRequired ?? 1,
+      quantityUnit: previous?.quantityUnit ?? 'TABLET',
+      schedule: schedule,
+    );
+  }
+
+  String _date(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 }
 
 class _RestorableAuthGateway implements AuthGateway {

@@ -76,6 +76,111 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
     return _medication(body['data'] as Map<String, dynamic>);
   }
 
+  @override
+  Future<MedicationSchedulePlan> createSchedule({
+    required String accessToken,
+    required String activation,
+    required MedicationScheduleDraft draft,
+    required String medicationId,
+  }) async {
+    final body = await _request(
+      'POST',
+      '/medications/$medicationId/schedules',
+      accessToken,
+      {
+        'activation': activation,
+        'daysOfWeek': draft.daysOfWeek,
+        if (draft.endDate case final endDate?) 'endDate': _localDate(endDate),
+        'excludedDates': draft.excludedDates.map(_localDate).toList(),
+        'openEnded': draft.endDate == null,
+        'recurrence': draft.recurrence,
+        'startDate': _localDate(draft.startDate),
+        'times': draft.times,
+        'timezone': draft.timezone,
+      },
+    );
+    final data = body['data'] as Map<String, dynamic>;
+    final scheduleData = data['schedule'] as Map<String, dynamic>?;
+    return MedicationSchedulePlan(
+      occurrences: (data['occurrences'] as List<dynamic>)
+          .map(
+            (item) => ScheduleOccurrencePreview(
+              plannedAt: DateTime.parse(
+                (item as Map<String, dynamic>)['plannedAt'] as String,
+              ),
+              plannedLocalDateTime: item['plannedLocalDateTime'] as String,
+            ),
+          )
+          .toList(growable: false),
+      quantityRequired: (data['quantityRequired'] as num).toDouble(),
+      quantityUnit: data['quantityUnit'] as String,
+      schedule: scheduleData == null ? null : _schedule(scheduleData),
+    );
+  }
+
+  @override
+  Future<List<DoseOccurrenceSummary>> listDoseOccurrences({
+    required String accessToken,
+    required DateTime from,
+    required String profileId,
+    required DateTime to,
+  }) async {
+    final uri =
+        '/patient-profiles/$profileId/dose-occurrences?from=${_localDate(from)}&to=${_localDate(to)}';
+    final body = await _request('GET', uri, accessToken);
+    return (body['data'] as List<dynamic>)
+        .map((item) {
+          final data = item as Map<String, dynamic>;
+          final medication = data['medication'] as Map<String, dynamic>;
+          return DoseOccurrenceSummary(
+            id: data['id'] as String,
+            medicationName: medication['displayName'] as String,
+            plannedAt: DateTime.parse(data['plannedAt'] as String),
+            plannedLocalDateTime: data['plannedLocalDateTime'] as String,
+            quantityLabel:
+                '${data['quantityValue']} ${data['quantityUnit'].toString().toLowerCase()}',
+            status: data['status'] as String? ?? 'NOT_SHARED',
+            version: data['version'] as int,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  Future<MedicationScheduleSummary> updateSchedule({
+    required String accessToken,
+    required MedicationScheduleDraft draft,
+    required MedicationScheduleSummary schedule,
+  }) async {
+    final body =
+        await _request('PATCH', '/schedules/${schedule.id}', accessToken, {
+          'daysOfWeek': draft.daysOfWeek,
+          if (draft.endDate case final endDate?) 'endDate': _localDate(endDate),
+          'excludedDates': draft.excludedDates.map(_localDate).toList(),
+          'expectedVersion': schedule.version,
+          'openEnded': draft.endDate == null,
+          'recurrence': draft.recurrence,
+          'startDate': _localDate(draft.startDate),
+          'times': draft.times,
+        });
+    return _schedule(body['data'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<MedicationScheduleSummary> commandSchedule({
+    required String accessToken,
+    required ScheduleAction action,
+    required MedicationScheduleSummary schedule,
+  }) async {
+    final body = await _request(
+      'POST',
+      '/schedules/${schedule.id}/${action.name}',
+      accessToken,
+      {'expectedVersion': schedule.version},
+    );
+    return _schedule(body['data'] as Map<String, dynamic>);
+  }
+
   Future<Map<String, dynamic>> _request(
     String method,
     String path,
@@ -125,6 +230,9 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
     final instruction = data['instructions'] as Map<String, dynamic>;
     final strength = data['strengthValue'];
     return MedicationSummary(
+      activeSchedule: data['activeSchedule'] == null
+          ? null
+          : _schedule(data['activeSchedule'] as Map<String, dynamic>),
       displayName: data['displayName'] as String,
       form: data['form'] as String,
       id: data['id'] as String,
@@ -136,4 +244,28 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
           : '$strength ${data['strengthUnit'] ?? ''}'.trim(),
     );
   }
+
+  MedicationScheduleSummary _schedule(Map<String, dynamic> data) =>
+      MedicationScheduleSummary(
+        daysOfWeek: (data['daysOfWeek'] as List<dynamic>? ?? const [])
+            .cast<int>(),
+        endDate: data['endDate'] == null
+            ? null
+            : DateTime.parse(data['endDate'] as String),
+        excludedDates: (data['excludedDates'] as List<dynamic>? ?? const [])
+            .cast<String>()
+            .map(DateTime.parse)
+            .toList(growable: false),
+        id: data['id'] as String,
+        revision: data['revision'] as int,
+        recurrence: data['recurrence'] as String? ?? 'DAILY',
+        startDate: DateTime.parse(data['startDate'] as String),
+        status: data['status'] as String,
+        times: (data['times'] as List<dynamic>).cast<String>(),
+        timezone: data['timezone'] as String,
+        version: data['version'] as int,
+      );
+
+  String _localDate(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 }

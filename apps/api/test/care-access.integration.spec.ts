@@ -103,7 +103,7 @@ describe("care access", () => {
       .expect(200)
       .expect(({ body }) => expect(body.data.status).toBe("ACCEPTED"));
 
-    await request(app!.getHttpServer())
+    const medication = await request(app!.getHttpServer())
       .post(`/api/v1/patient-profiles/${profile.body.data.id}/medications`)
       .set("Authorization", ownerAuthorization)
       .send({
@@ -117,6 +117,17 @@ describe("care access", () => {
         },
         strengthUnit: "mg",
         strengthValue: 500,
+      })
+      .expect(201);
+    await request(app!.getHttpServer())
+      .post(`/api/v1/medications/${medication.body.data.id}/schedules`)
+      .set("Authorization", ownerAuthorization)
+      .send({
+        activation: "ACTIVATE",
+        endDate: "2099-01-01",
+        startDate: "2099-01-01",
+        times: ["08:00"],
+        timezone: "Asia/Dhaka",
       })
       .expect(201);
     const sharedProfiles = await request(app!.getHttpServer())
@@ -133,6 +144,41 @@ describe("care access", () => {
       .set("Authorization", caregiverAuthorization)
       .expect(200);
     expect(sharedMedicines.body.data[0].displayName).toBe("Napa");
+    const sharedOccurrences = await request(app!.getHttpServer())
+      .get(`/api/v1/patient-profiles/${profile.body.data.id}/dose-occurrences`)
+      .set("Authorization", caregiverAuthorization)
+      .query({ from: "2099-01-01", to: "2099-01-01" })
+      .expect(200);
+    expect(sharedOccurrences.body.data).toHaveLength(1);
+    expect(sharedOccurrences.body.data[0]).not.toHaveProperty("status");
+    const outcomeInvitation = await request(app!.getHttpServer())
+      .post(`/api/v1/patient-profiles/${profile.body.data.id}/care-invitations`)
+      .set("Authorization", ownerAuthorization)
+      .send({
+        phoneNumber: "01900123456",
+        permissions: {
+          canReceiveMissedDoseAlerts: false,
+          canViewDoseOutcomes: true,
+          canViewMedicationPlan: true,
+        },
+      })
+      .expect(201);
+    const outcomeCaregiver = await signIn(
+      "01900123456",
+      "01K2OUTCOMECARE0000000001",
+    );
+    await request(app!.getHttpServer())
+      .patch(
+        `/api/v1/care-invitations/${outcomeInvitation.body.data.id}/accept`,
+      )
+      .set("Authorization", outcomeCaregiver)
+      .expect(200);
+    const sharedOutcomes = await request(app!.getHttpServer())
+      .get(`/api/v1/patient-profiles/${profile.body.data.id}/dose-occurrences`)
+      .set("Authorization", outcomeCaregiver)
+      .query({ from: "2099-01-01", to: "2099-01-01" })
+      .expect(200);
+    expect(sharedOutcomes.body.data[0].status).toBe("SCHEDULED");
     await request(app!.getHttpServer())
       .post(`/api/v1/patient-profiles/${profile.body.data.id}/medications`)
       .set("Authorization", caregiverAuthorization)

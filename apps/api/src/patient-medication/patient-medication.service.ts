@@ -102,7 +102,14 @@ export class PatientMedicationService {
   async listMedications(userId: string, profileId: string) {
     await this.readableProfile(userId, profileId);
     const medications = await this.database.medication.findMany({
-      include: { instructions: true },
+      include: {
+        instructions: true,
+        schedules: {
+          orderBy: { updatedAt: "desc" },
+          take: 1,
+          where: { status: { in: ["ACTIVE", "PAUSED"] } },
+        },
+      },
       orderBy: { createdAt: "desc" },
       where: { patientProfileId: profileId },
     });
@@ -149,7 +156,14 @@ export class PatientMedicationService {
   private ownedMedication(userId: string, medicationId: string) {
     return this.database.medication
       .findFirst({
-        include: { instructions: true },
+        include: {
+          instructions: true,
+          schedules: {
+            orderBy: { updatedAt: "desc" },
+            take: 1,
+            where: { status: { in: ["ACTIVE", "PAUSED"] } },
+          },
+        },
         where: {
           id: medicationId,
           patientProfile: { ownerUserId: userId },
@@ -192,7 +206,14 @@ export class PatientMedicationService {
 
   private async readableMedication(userId: string, medicationId: string) {
     const medication = await this.database.medication.findUnique({
-      include: { instructions: true },
+      include: {
+        instructions: true,
+        schedules: {
+          orderBy: { updatedAt: "desc" },
+          take: 1,
+          where: { status: { in: ["ACTIVE", "PAUSED"] } },
+        },
+      },
       where: { id: medicationId },
     });
     if (!medication) this.notFound();
@@ -257,10 +278,45 @@ export class PatientMedicationService {
     status: string;
     strengthUnit: string | null;
     strengthValue: number | null;
+    schedules?: Array<{
+      daysOfWeekJson: string;
+      endDate: string | null;
+      excludedDatesJson: string;
+      generatedThroughDate: string;
+      generationHorizonDays: number;
+      id: string;
+      revision: number;
+      startDate: string;
+      status: string;
+      timesJson: string;
+      timezone: string;
+      version: number;
+    }>;
     updatedAt: Date;
     version: number;
   }) {
     return {
+      activeSchedule: medication.schedules?.[0]
+        ? {
+            daysOfWeek: JSON.parse(
+              medication.schedules[0].daysOfWeekJson,
+            ) as number[],
+            endDate: medication.schedules[0].endDate,
+            excludedDates: JSON.parse(
+              medication.schedules[0].excludedDatesJson,
+            ) as string[],
+            generatedThroughDate: medication.schedules[0].generatedThroughDate,
+            generationHorizonDays:
+              medication.schedules[0].generationHorizonDays,
+            id: medication.schedules[0].id,
+            revision: medication.schedules[0].revision,
+            startDate: medication.schedules[0].startDate,
+            status: medication.schedules[0].status,
+            times: JSON.parse(medication.schedules[0].timesJson) as string[],
+            timezone: medication.schedules[0].timezone,
+            version: medication.schedules[0].version,
+          }
+        : null,
       createdAt: medication.createdAt.toISOString(),
       displayName: medication.displayName,
       form: medication.form,

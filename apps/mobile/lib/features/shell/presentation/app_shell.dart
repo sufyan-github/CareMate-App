@@ -71,6 +71,7 @@ class _AppShellState extends State<AppShell> {
     final pages = <Widget>[
       TodayPage(
         canManage: widget.medicationCoordinator.profile!.canManage,
+        occurrences: widget.medicationCoordinator.doseOccurrences,
         onAddCaregiver: _openCaregiverInvitation,
         onAddMedicine: _openMedicationForm,
         onScanPrescription: _openPrescriptionScan,

@@ -1,5 +1,7 @@
 import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
+import 'package:caremate/features/medications/presentation/schedule_manage_page.dart';
+import 'package:caremate/features/medications/presentation/schedule_setup_page.dart';
 import 'package:flutter/material.dart';
 
 Future<void> showMedicationForm(
@@ -87,6 +89,13 @@ class MedicationsPage extends StatelessWidget {
                           ),
                           isThreeLine: true,
                           trailing: const Icon(Icons.chevron_right),
+                          onTap: coordinator.profile?.canManage ?? true
+                              ? () => _openSchedule(
+                                  context,
+                                  coordinator,
+                                  medication,
+                                )
+                              : null,
                         ),
                       );
                     },
@@ -97,6 +106,38 @@ class MedicationsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openSchedule(
+    BuildContext context,
+    PatientMedicationCoordinator coordinator,
+    MedicationSummary medication,
+  ) async {
+    final schedule = medication.activeSchedule;
+    final result = await Navigator.push<Object?>(
+      context,
+      MaterialPageRoute<Object?>(
+        builder: (_) => schedule == null
+            ? ScheduleSetupPage(
+                coordinator: coordinator,
+                medication: medication,
+              )
+            : ScheduleManagePage(
+                coordinator: coordinator,
+                medication: medication,
+                schedule: schedule,
+              ),
+      ),
+    );
+    if (result != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result == 'ended' ? 'Schedule ended' : 'Medication schedule active',
+          ),
+        ),
+      );
+    }
   }
 }
 

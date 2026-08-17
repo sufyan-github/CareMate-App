@@ -22,6 +22,7 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
   final _phone = TextEditingController();
   bool _canViewPlan = true;
   bool _canReceiveMissedDoseAlerts = true;
+  bool _canViewDoseOutcomes = false;
   bool _isSaving = false;
   String? _error;
 
@@ -70,10 +71,24 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _canViewPlan,
-                onChanged: (value) =>
-                    setState(() => _canViewPlan = value ?? false),
+                onChanged: (value) => setState(() {
+                  _canViewPlan = value ?? false;
+                  if (!_canViewPlan) _canViewDoseOutcomes = false;
+                }),
                 title: const Text('View confirmed medication plan'),
                 subtitle: const Text('Does not allow changing medicines'),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _canViewDoseOutcomes,
+                onChanged: !_canViewPlan
+                    ? null
+                    : (value) =>
+                          setState(() => _canViewDoseOutcomes = value ?? false),
+                title: const Text('View reported dose outcomes'),
+                subtitle: const Text(
+                  'Shows confirmed, skipped, and missed app records',
+                ),
               ),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -124,6 +139,7 @@ class _InviteCaregiverPageState extends State<InviteCaregiverPage> {
         permissions: CarePermissions(
           canReceiveMissedDoseAlerts: _canReceiveMissedDoseAlerts,
           canViewMedicationPlan: _canViewPlan,
+          canViewDoseOutcomes: _canViewDoseOutcomes,
         ),
       );
       if (mounted) Navigator.pop(context, true);

@@ -103,6 +103,7 @@ model PatientProfile {
   medications     Medication[]
   ocrDrafts       OcrDraft[]
   careInvitations CareInvitation[]
+  doseOccurrences DoseOccurrence[]
 }
 
 model CareInvitation {
@@ -176,6 +177,8 @@ model Medication {
   updatedAt        DateTime         @updatedAt
   patientProfile   PatientProfile   @relation(fields: [patientProfileId], references: [id])
   instructions     DoseInstruction?
+  schedules        MedicationSchedule[]
+  doseOccurrences  DoseOccurrence[]
 
   @@index([patientProfileId, status])
 }
@@ -189,4 +192,52 @@ model DoseInstruction {
   mealRelation  String
   sourceText    String?
   medication    Medication @relation(fields: [medicationId], references: [id])
+}
+
+model MedicationSchedule {
+  id             String           @id
+  medicationId   String
+  status         String           @default("ACTIVE")
+  timezone       String
+  startDate      String
+  endDate        String?
+  timesJson      String
+  recurrence     String           @default("DAILY")
+  daysOfWeekJson String           @default("[]")
+  excludedDatesJson String        @default("[]")
+  generationHorizonDays Int       @default(30)
+  generatedThroughDate String
+  timezonePolicy String           @default("LOCAL_TIME_ANCHORED")
+  revision       Int              @default(1)
+  version        Int              @default(1)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  medication     Medication       @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  occurrences    DoseOccurrence[]
+
+  @@index([medicationId, status])
+}
+
+model DoseOccurrence {
+  id                       String             @id
+  scheduleId               String
+  medicationId             String
+  patientProfileId         String
+  ruleRevision             Int
+  plannedLocalDateTime     String
+  plannedAt                DateTime
+  timezone                 String
+  quantityValue            Float
+  quantityUnit             String
+  status                   String             @default("SCHEDULED")
+  version                  Int                @default(1)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  schedule                 MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  medication               Medication         @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  patientProfile           PatientProfile     @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([scheduleId, plannedLocalDateTime, ruleRevision])
+  @@index([patientProfileId, plannedAt])
+  @@index([scheduleId, status])
 }

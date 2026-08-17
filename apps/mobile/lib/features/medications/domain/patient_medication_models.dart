@@ -44,6 +44,7 @@ class MedicationDraft {
 
 class MedicationSummary {
   const MedicationSummary({
+    this.activeSchedule,
     required this.displayName,
     required this.form,
     required this.id,
@@ -52,6 +53,7 @@ class MedicationSummary {
     required this.strengthLabel,
   });
 
+  final MedicationScheduleSummary? activeSchedule;
   final String displayName;
   final String form;
   final String id;
@@ -59,3 +61,97 @@ class MedicationSummary {
   final String status;
   final String strengthLabel;
 }
+
+class MedicationScheduleDraft {
+  const MedicationScheduleDraft({
+    this.daysOfWeek = const [],
+    required this.endDate,
+    this.excludedDates = const [],
+    this.recurrence = 'DAILY',
+    required this.startDate,
+    required this.times,
+    required this.timezone,
+  });
+
+  final List<int> daysOfWeek;
+  final DateTime? endDate;
+  final List<DateTime> excludedDates;
+  final String recurrence;
+  final DateTime startDate;
+  final List<String> times;
+  final String timezone;
+}
+
+class ScheduleOccurrencePreview {
+  const ScheduleOccurrencePreview({
+    required this.plannedAt,
+    required this.plannedLocalDateTime,
+  });
+
+  final DateTime plannedAt;
+  final String plannedLocalDateTime;
+}
+
+class MedicationScheduleSummary {
+  const MedicationScheduleSummary({
+    this.daysOfWeek = const [],
+    required this.endDate,
+    this.excludedDates = const [],
+    required this.id,
+    required this.revision,
+    this.recurrence = 'DAILY',
+    required this.startDate,
+    required this.status,
+    required this.times,
+    required this.timezone,
+    required this.version,
+  });
+
+  final List<int> daysOfWeek;
+  final DateTime? endDate;
+  final List<DateTime> excludedDates;
+  final String id;
+  final int revision;
+  final String recurrence;
+  final DateTime startDate;
+  final String status;
+  final List<String> times;
+  final String timezone;
+  final int version;
+}
+
+class MedicationSchedulePlan {
+  const MedicationSchedulePlan({
+    required this.occurrences,
+    required this.quantityRequired,
+    required this.quantityUnit,
+    this.schedule,
+  });
+
+  final List<ScheduleOccurrencePreview> occurrences;
+  final double quantityRequired;
+  final String quantityUnit;
+  final MedicationScheduleSummary? schedule;
+}
+
+class DoseOccurrenceSummary {
+  const DoseOccurrenceSummary({
+    required this.id,
+    required this.medicationName,
+    required this.plannedAt,
+    required this.plannedLocalDateTime,
+    required this.quantityLabel,
+    required this.status,
+    required this.version,
+  });
+
+  final String id;
+  final String medicationName;
+  final DateTime plannedAt;
+  final String plannedLocalDateTime;
+  final String quantityLabel;
+  final String status;
+  final int version;
+}
+
+enum ScheduleAction { pause, resume, end }

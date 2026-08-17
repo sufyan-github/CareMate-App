@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsBoolean,
+  IsOptional,
   IsString,
   MaxLength,
   ValidateNested,
@@ -12,6 +13,10 @@ export class CarePermissionsDto {
 
   @IsBoolean()
   canReceiveMissedDoseAlerts!: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  canViewDoseOutcomes?: boolean;
 }
 
 export class CreateCareInvitationDto {

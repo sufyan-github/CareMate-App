@@ -23,6 +23,7 @@ void main() {
             'phoneNumber': '01800123456',
             'permissions': {
               'canReceiveMissedDoseAlerts': true,
+              'canViewDoseOutcomes': false,
               'canViewMedicationPlan': true,
             },
           });
