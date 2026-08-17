@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/care/presentation/care_access_entry_page.dart';
@@ -7,6 +9,7 @@ import 'package:caremate/features/prescription/domain/prescription_text_recogniz
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/shell/presentation/app_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
 
 class AuthenticatedExperience extends StatefulWidget {
   const AuthenticatedExperience({
@@ -17,6 +20,7 @@ class AuthenticatedExperience extends StatefulWidget {
     required this.onLogout,
     required this.prescriptionExtractionGateway,
     required this.prescriptionTextRecognizer,
+    required this.reminderScheduler,
     super.key,
   });
 
@@ -27,28 +31,40 @@ class AuthenticatedExperience extends StatefulWidget {
   final Future<void> Function() onLogout;
   final PrescriptionExtractionGateway prescriptionExtractionGateway;
   final PrescriptionTextRecognizer prescriptionTextRecognizer;
+  final ReminderScheduler reminderScheduler;
 
   @override
   State<AuthenticatedExperience> createState() =>
       _AuthenticatedExperienceState();
 }
 
-class _AuthenticatedExperienceState extends State<AuthenticatedExperience> {
+class _AuthenticatedExperienceState extends State<AuthenticatedExperience>
+    with WidgetsBindingObserver {
   late final PatientMedicationCoordinator _coordinator;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _coordinator = PatientMedicationCoordinator(
       accessToken: widget.accessToken,
       gateway: widget.gateway,
+      reminderScheduler: widget.reminderScheduler,
     )..initialize();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _coordinator.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_coordinator.refreshAfterAppResume());
+    }
   }
 
   @override

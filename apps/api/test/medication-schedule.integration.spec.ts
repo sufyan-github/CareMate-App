@@ -30,9 +30,14 @@ describe("medication schedules", () => {
     await app.init();
   });
 
-  afterEach(async () => app?.close());
+  afterEach(async () => {
+    await app?.close();
+    vi.useRealTimers();
+  });
 
   it("previews and activates a reviewed daily schedule with deterministic occurrences", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-17T01:55:00.000Z"));
     const challenge = await request(app!.getHttpServer())
       .post("/api/v1/auth/otp/requests")
       .send({
@@ -186,7 +191,6 @@ describe("medication schedules", () => {
     expect(openSchedule.body.data.schedule.generatedThroughDate).toBe(
       "2026-09-15",
     );
-    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-08-18T00:00:00.000Z"));
     try {
       const refreshed = await request(app!.getHttpServer())

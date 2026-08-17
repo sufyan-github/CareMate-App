@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:caremate/features/auth/domain/auth_models.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
+import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
 
 enum PatientMedicationStatus { loading, needsProfile, ready, error }
 
@@ -9,17 +13,28 @@ class PatientMedicationCoordinator extends ChangeNotifier {
   PatientMedicationCoordinator({
     required this.accessToken,
     required this.gateway,
+    required this.reminderScheduler,
   });
 
   final String accessToken;
   final PatientMedicationGateway gateway;
+  final ReminderScheduler reminderScheduler;
 
   PatientMedicationStatus status = PatientMedicationStatus.loading;
   PatientProfile? profile;
   List<MedicationSummary> medications = const [];
   List<DoseOccurrenceSummary> doseOccurrences = const [];
+  List<DoseOccurrenceSummary> reminderOccurrences = const [];
   String? errorMessage;
   bool isSaving = false;
+  ReminderReadiness? reminderReadiness;
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   Future<void> initialize() async {
     try {
@@ -30,6 +45,8 @@ class PatientMedicationCoordinator extends ChangeNotifier {
         profile = profiles.first;
         await _loadMedications();
         status = PatientMedicationStatus.ready;
+        notifyListeners();
+        unawaited(_initializeReminders());
       }
     } on AuthFailure catch (failure) {
       errorMessage = failure.message;
@@ -47,6 +64,7 @@ class PatientMedicationCoordinator extends ChangeNotifier {
       );
       medications = const [];
       status = PatientMedicationStatus.ready;
+      unawaited(_initializeReminders());
     });
   }
 
@@ -94,6 +112,7 @@ class PatientMedicationCoordinator extends ChangeNotifier {
         _replaceSchedule(medicationId, schedule);
       }
       await _loadDoseOccurrences();
+      await _reconcileReminders();
       notifyListeners();
     }
     return plan;
@@ -114,6 +133,7 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     if (updated != null) {
       _replaceSchedule(medicationId, updated);
       await _loadDoseOccurrences();
+      await _reconcileReminders();
       notifyListeners();
     }
     return updated;
@@ -137,9 +157,79 @@ class PatientMedicationCoordinator extends ChangeNotifier {
         updated.status == 'ENDED' ? null : updated,
       );
       await _loadDoseOccurrences();
+      await _reconcileReminders();
       notifyListeners();
     }
     return updated;
+  }
+
+  Future<bool> commandDose(
+    DoseOccurrenceSummary occurrence,
+    DoseAction action, {
+    String? reason,
+    int? snoozeMinutes,
+  }) async {
+    return _save(() async {
+      final updated = await gateway.commandDose(
+        accessToken: accessToken,
+        command: DoseCommand(
+          action: action,
+          clientAt: DateTime.now(),
+          clientMutationId: const Uuid().v7(),
+          occurrence: occurrence,
+          reason: reason,
+          snoozeMinutes: snoozeMinutes,
+        ),
+      );
+      doseOccurrences = doseOccurrences
+          .map((item) => item.id == updated.id ? updated : item)
+          .toList(growable: false);
+      reminderOccurrences = reminderOccurrences
+          .map((item) => item.id == updated.id ? updated : item)
+          .toList(growable: false);
+      await _reconcileReminders();
+    });
+  }
+
+  Future<void> requestReminderPermissions() async {
+    try {
+      reminderReadiness = await reminderScheduler.checkReadiness(request: true);
+      await _reconcileReminders();
+    } on Object {
+      reminderReadiness = const ReminderReadiness(
+        exactAlarmsAllowed: false,
+        notificationsAllowed: false,
+        supported: false,
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> openReminderSettings() async {
+    try {
+      await reminderScheduler.openNotificationSettings();
+    } on Object {
+      errorMessage = 'Could not open Android notification settings.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshAfterAppResume() async {
+    if (status != PatientMedicationStatus.ready || _disposed) return;
+    try {
+      await _loadDoseOccurrences();
+      reminderReadiness = await reminderScheduler.checkReadiness();
+      await _reconcileReminders();
+    } on AuthFailure catch (failure) {
+      errorMessage = failure.message;
+    } on Object {
+      reminderReadiness = const ReminderReadiness(
+        exactAlarmsAllowed: false,
+        notificationsAllowed: false,
+        supported: false,
+      );
+    }
+    if (!_disposed) notifyListeners();
   }
 
   Future<void> _loadMedications() async {
@@ -161,6 +251,57 @@ class PatientMedicationCoordinator extends ChangeNotifier {
       profileId: activeProfile.id,
       to: start,
     );
+    reminderOccurrences = await gateway.listDoseOccurrences(
+      accessToken: accessToken,
+      from: start,
+      profileId: activeProfile.id,
+      to: start.add(const Duration(days: 13)),
+    );
+  }
+
+  Future<void> _initializeReminders() async {
+    try {
+      await reminderScheduler.initialize(_handleReminderAction);
+      reminderReadiness = await reminderScheduler.checkReadiness();
+      await _reconcileReminders();
+    } on Object {
+      reminderReadiness = const ReminderReadiness(
+        exactAlarmsAllowed: false,
+        notificationsAllowed: false,
+        supported: false,
+      );
+    } finally {
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<void> _handleReminderAction(
+    String occurrenceId,
+    DoseAction action,
+  ) async {
+    final occurrence = doseOccurrences
+        .followedBy(reminderOccurrences)
+        .where((item) => item.id == occurrenceId)
+        .firstOrNull;
+    if (occurrence == null) return;
+    await commandDose(
+      occurrence,
+      action,
+      snoozeMinutes: action == DoseAction.snooze ? 10 : null,
+    );
+  }
+
+  Future<void> _reconcileReminders() async {
+    if (reminderReadiness?.notificationsAllowed != true) return;
+    try {
+      await reminderScheduler.reconcile(reminderOccurrences);
+    } on Object {
+      reminderReadiness = ReminderReadiness(
+        exactAlarmsAllowed: reminderReadiness?.exactAlarmsAllowed ?? false,
+        notificationsAllowed: false,
+        supported: reminderReadiness?.supported ?? false,
+      );
+    }
   }
 
   Future<T?> _scheduleOperation<T>(Future<T> Function() operation) async {

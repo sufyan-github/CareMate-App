@@ -3,6 +3,7 @@ import { ulid } from "ulid";
 
 import { AuthError } from "../auth/auth-error.js";
 import { DatabaseService } from "../database/database.service.js";
+import { DoseLifecycleService } from "../dose-lifecycle/dose-lifecycle.service.js";
 import type {
   CreateMedicationScheduleDto,
   DoseOccurrenceWindowDto,
@@ -19,6 +20,7 @@ import {
 export class MedicationScheduleService {
   constructor(
     private readonly database: DatabaseService,
+    private readonly doseLifecycle: DoseLifecycleService,
     private readonly engine: ScheduleEngine,
   ) {}
 
@@ -141,6 +143,7 @@ export class MedicationScheduleService {
       );
     }
     await this.extendRollingHorizon(profileId, window.to);
+    await this.doseLifecycle.evaluateWindow(profileId, window.from, window.to);
     const occurrences = await this.database.doseOccurrence.findMany({
       include: { medication: true },
       orderBy: { plannedAt: "asc" },
@@ -165,8 +168,20 @@ export class MedicationScheduleService {
         plannedLocalDateTime: occurrence.plannedLocalDateTime,
         quantityUnit: occurrence.quantityUnit,
         quantityValue: occurrence.quantityValue,
+        ruleRevision: occurrence.ruleRevision,
         scheduleId: occurrence.scheduleId,
-        ...(access.canViewDoseOutcomes ? { status: occurrence.status } : {}),
+        ...(access.canViewDoseOutcomes
+          ? {
+              confirmedAt: occurrence.confirmedAt?.toISOString() ?? null,
+              missedAt: occurrence.missedAt?.toISOString() ?? null,
+              reminderSentAt: occurrence.reminderSentAt?.toISOString() ?? null,
+              responseDueAt: occurrence.responseDueAt?.toISOString() ?? null,
+              snoozeCount: occurrence.snoozeCount,
+              snoozedUntil: occurrence.snoozedUntil?.toISOString() ?? null,
+              status: occurrence.status,
+              timingClassification: occurrence.timingClassification,
+            }
+          : {}),
         timezone: occurrence.timezone,
         version: occurrence.version,
       })),

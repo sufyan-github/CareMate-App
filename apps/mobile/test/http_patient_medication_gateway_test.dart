@@ -117,4 +117,67 @@ void main() {
       expect(paused.version, 3);
     },
   );
+
+  test('records a self-reported dose action with an idempotency key', () async {
+    final occurrence = DoseOccurrenceSummary(
+      id: 'occurrence-1',
+      medicationName: 'Napa',
+      plannedAt: DateTime.parse('2026-08-17T02:00:00.000Z'),
+      plannedLocalDateTime: '2026-08-17T08:00',
+      quantityLabel: '1 tablet',
+      status: 'REMINDER_SENT',
+      version: 2,
+    );
+    final gateway = HttpPatientMedicationGateway(
+      baseUrl: 'http://caremate.test/api/v1',
+      client: MockClient((request) async {
+        expect(request.method, 'POST');
+        expect(
+          request.url.path,
+          '/api/v1/dose-occurrences/occurrence-1/commands',
+        );
+        expect(jsonDecode(request.body), {
+          'clientAt': '2026-08-17T02:05:00.000Z',
+          'clientMutationId': 'mutation-12345678901234567890',
+          'command': 'SNOOZE',
+          'expectedVersion': 2,
+          'payload': {'snoozeMinutes': 10},
+        });
+        return http.Response(
+          jsonEncode({
+            'data': {
+              'confirmedAt': null,
+              'id': 'occurrence-1',
+              'missedAt': null,
+              'reminderSentAt': '2026-08-17T02:00:00.000Z',
+              'responseDueAt': '2026-08-17T03:15:00.000Z',
+              'snoozeCount': 1,
+              'snoozedUntil': '2026-08-17T02:15:00.000Z',
+              'status': 'SNOOZED',
+              'timingClassification': null,
+              'version': 3,
+            },
+          }),
+          201,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+
+    final updated = await gateway.commandDose(
+      accessToken: 'access-1',
+      command: DoseCommand(
+        action: DoseAction.snooze,
+        clientAt: DateTime.parse('2026-08-17T02:05:00.000Z'),
+        clientMutationId: 'mutation-12345678901234567890',
+        occurrence: occurrence,
+        snoozeMinutes: 10,
+      ),
+    );
+
+    expect(updated.status, 'SNOOZED');
+    expect(updated.snoozeCount, 1);
+    expect(updated.snoozedUntil, DateTime.parse('2026-08-17T02:15:00.000Z'));
+    expect(updated.version, 3);
+  });
 }

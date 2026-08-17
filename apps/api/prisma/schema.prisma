@@ -231,13 +231,51 @@ model DoseOccurrence {
   quantityUnit             String
   status                   String             @default("SCHEDULED")
   version                  Int                @default(1)
+  reminderSentAt           DateTime?
+  snoozedUntil             DateTime?
+  responseDueAt            DateTime?
+  snoozeCount              Int                @default(0)
+  missedAt                 DateTime?
+  confirmedAt              DateTime?
+  timingClassification     String?
   createdAt                DateTime           @default(now())
   updatedAt                DateTime           @updatedAt
   schedule                 MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
   medication               Medication         @relation(fields: [medicationId], references: [id], onDelete: Restrict)
   patientProfile           PatientProfile     @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
+  events                   DoseEvent[]
+  confirmation             DoseConfirmation?
 
   @@unique([scheduleId, plannedLocalDateTime, ruleRevision])
   @@index([patientProfileId, plannedAt])
   @@index([scheduleId, status])
+}
+
+model DoseEvent {
+  id               String         @id
+  occurrenceId     String
+  eventType         String
+  sequence          Int
+  actorUserId       String?
+  clientMutationId String?        @unique
+  clientAt         DateTime?
+  serverAt         DateTime       @default(now())
+  metadataJson     String         @default("{}")
+  resultJson       String?
+  occurrence       DoseOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+
+  @@index([occurrenceId, serverAt])
+  @@unique([occurrenceId, sequence])
+}
+
+model DoseConfirmation {
+  id                   String         @id
+  occurrenceId         String         @unique
+  actorUserId           String
+  authSessionId         String
+  deviceInstallationId String
+  timingClassification String
+  confirmedAt          DateTime
+  clientAt              DateTime
+  occurrence            DoseOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
 }

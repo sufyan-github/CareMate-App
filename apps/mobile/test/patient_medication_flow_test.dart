@@ -209,4 +209,62 @@ void main() {
     expect(patientGateway.lastScheduleDraft?.recurrence, 'WEEKLY');
     expect(patientGateway.lastScheduleDraft?.daysOfWeek, isNotEmpty);
   });
+
+  testWidgets('records confirm, snooze, and skip actions from Today', (
+    tester,
+  ) async {
+    final patientGateway = existingPatientGateway();
+    patientGateway.medications.add(
+      const MedicationSummary(
+        displayName: 'Napa',
+        form: 'TABLET',
+        id: 'medication-1',
+        quantityLabel: '1 tablet',
+        status: 'ACTIVE',
+        strengthLabel: '500 mg',
+      ),
+    );
+    patientGateway.activeSchedule = MedicationSchedulePlan(
+      occurrences: [
+        ScheduleOccurrencePreview(
+          plannedAt: DateTime.now().subtract(const Duration(minutes: 1)),
+          plannedLocalDateTime: '2026-08-17T08:00',
+        ),
+      ],
+      quantityRequired: 1,
+      quantityUnit: 'TABLET',
+      schedule: MedicationScheduleSummary(
+        endDate: DateTime(2026, 8, 17),
+        id: 'schedule-1',
+        revision: 1,
+        startDate: DateTime(2026, 8, 17),
+        status: 'ACTIVE',
+        times: const ['08:00'],
+        timezone: 'Asia/Dhaka',
+        version: 1,
+      ),
+    );
+    await tester.pumpWidget(
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        careAccessGateway: emptyCareAccessGateway(),
+        patientMedicationGateway: patientGateway,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(FilledButton, 'Confirm'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Snooze'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Skip'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Snooze'));
+    await tester.pumpAndSettle();
+    expect(find.text('Snoozed for 10 minutes'), findsOneWidget);
+    expect(patientGateway.doseOutcomes['occurrence-1']?.status, 'SNOOZED');
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
+    await tester.pumpAndSettle();
+    expect(find.text('Confirmed by you'), findsOneWidget);
+    expect(patientGateway.doseOutcomes['occurrence-1']?.status, 'CONFIRMED');
+  });
 }

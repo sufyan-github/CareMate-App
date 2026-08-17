@@ -133,17 +133,66 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
           final data = item as Map<String, dynamic>;
           final medication = data['medication'] as Map<String, dynamic>;
           return DoseOccurrenceSummary(
+            confirmedAt: _optionalDate(data['confirmedAt']),
             id: data['id'] as String,
             medicationName: medication['displayName'] as String,
+            missedAt: _optionalDate(data['missedAt']),
             plannedAt: DateTime.parse(data['plannedAt'] as String),
             plannedLocalDateTime: data['plannedLocalDateTime'] as String,
             quantityLabel:
                 '${data['quantityValue']} ${data['quantityUnit'].toString().toLowerCase()}',
+            reminderSentAt: _optionalDate(data['reminderSentAt']),
+            responseDueAt: _optionalDate(data['responseDueAt']),
+            ruleRevision: data['ruleRevision'] as int? ?? 1,
+            snoozeCount: data['snoozeCount'] as int? ?? 0,
+            snoozedUntil: _optionalDate(data['snoozedUntil']),
             status: data['status'] as String? ?? 'NOT_SHARED',
+            timingClassification: data['timingClassification'] as String?,
             version: data['version'] as int,
           );
         })
         .toList(growable: false);
+  }
+
+  @override
+  Future<DoseOccurrenceSummary> commandDose({
+    required String accessToken,
+    required DoseCommand command,
+  }) async {
+    final payload = <String, dynamic>{
+      if (command.reason != null) 'reason': command.reason,
+      if (command.snoozeMinutes != null) 'snoozeMinutes': command.snoozeMinutes,
+    };
+    final body = await _request(
+      'POST',
+      '/dose-occurrences/${command.occurrence.id}/commands',
+      accessToken,
+      {
+        'clientAt': command.clientAt.toUtc().toIso8601String(),
+        'clientMutationId': command.clientMutationId,
+        'command': command.action.name.toUpperCase(),
+        'expectedVersion': command.occurrence.version,
+        if (payload.isNotEmpty) 'payload': payload,
+      },
+    );
+    final data = body['data'] as Map<String, dynamic>;
+    return DoseOccurrenceSummary(
+      confirmedAt: _optionalDate(data['confirmedAt']),
+      id: command.occurrence.id,
+      medicationName: command.occurrence.medicationName,
+      missedAt: _optionalDate(data['missedAt']),
+      plannedAt: command.occurrence.plannedAt,
+      plannedLocalDateTime: command.occurrence.plannedLocalDateTime,
+      quantityLabel: command.occurrence.quantityLabel,
+      reminderSentAt: _optionalDate(data['reminderSentAt']),
+      responseDueAt: _optionalDate(data['responseDueAt']),
+      ruleRevision: command.occurrence.ruleRevision,
+      snoozeCount: data['snoozeCount'] as int? ?? 0,
+      snoozedUntil: _optionalDate(data['snoozedUntil']),
+      status: data['status'] as String,
+      timingClassification: data['timingClassification'] as String?,
+      version: data['version'] as int,
+    );
   }
 
   @override
@@ -268,4 +317,7 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
 
   String _localDate(DateTime value) =>
       '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  DateTime? _optionalDate(Object? value) =>
+      value is String ? DateTime.parse(value) : null;
 }

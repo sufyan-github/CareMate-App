@@ -136,22 +136,58 @@ class MedicationSchedulePlan {
 
 class DoseOccurrenceSummary {
   const DoseOccurrenceSummary({
+    this.confirmedAt,
     required this.id,
     required this.medicationName,
+    this.missedAt,
     required this.plannedAt,
     required this.plannedLocalDateTime,
     required this.quantityLabel,
+    this.reminderSentAt,
+    this.responseDueAt,
+    this.ruleRevision = 1,
+    this.snoozeCount = 0,
+    this.snoozedUntil,
     required this.status,
+    this.timingClassification,
     required this.version,
   });
 
+  final DateTime? confirmedAt;
   final String id;
   final String medicationName;
+  final DateTime? missedAt;
   final DateTime plannedAt;
   final String plannedLocalDateTime;
   final String quantityLabel;
+  final DateTime? reminderSentAt;
+  final DateTime? responseDueAt;
+  final int ruleRevision;
+  final int snoozeCount;
+  final DateTime? snoozedUntil;
   final String status;
+  final String? timingClassification;
   final int version;
+}
+
+enum DoseAction { confirm, snooze, skip }
+
+class DoseCommand {
+  const DoseCommand({
+    required this.action,
+    required this.clientAt,
+    required this.clientMutationId,
+    required this.occurrence,
+    this.reason,
+    this.snoozeMinutes,
+  });
+
+  final DoseAction action;
+  final DateTime clientAt;
+  final String clientMutationId;
+  final DoseOccurrenceSummary occurrence;
+  final String? reason;
+  final int? snoozeMinutes;
 }
 
 enum ScheduleAction { pause, resume, end }

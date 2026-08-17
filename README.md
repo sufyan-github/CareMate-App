@@ -25,6 +25,13 @@ CareMate is a Bangladesh-first medication-support and family-care platform speci
   and timezone-correct UTC conversion
 - Versioned schedule editing plus pause, resume, and end controls that preserve
   historical occurrences and only replace eligible future Dose Occurrences
+- Versioned, idempotent Dose Occurrence commands for self-reported confirm,
+  snooze, skip, automatic missed classification, and preserved late outcomes
+- Android local notifications with private lock-screen copy, confirm/snooze/
+  skip actions, exact-alarm readiness, best-allowed inexact fallback, and a
+  rolling 14-day reconciliation window
+- Operational Today dose actions and notification centre with explicit
+  permission/timing guidance and upcoming planned reminders
 - Separate caregiver permissions for medication-plan timing and private
   self-reported dose outcomes
 - Prescription capture with on-device fallback, explicit cloud consent,
@@ -89,11 +96,19 @@ number and use OTP `123456`. Then verify these flows:
 2. Open the medicine, choose the schedule dates and confirmed dose times,
    preview the occurrence count and required quantity, then activate it. Verify
    the dose appears on Today and that pause, resume, edit, and end work.
-3. Scan a prescription, choose on-device or consented cloud OCR, review the
+3. On Today, confirm a due occurrence. With another occurrence, verify a
+   10-minute snooze and skip confirmation. Repeating an action must not create
+   a duplicate outcome.
+4. Open Notifications, enable Android notification permission, and allow
+   precise alarms when offered. If precise alarms remain unavailable, verify
+   the page reports best-allowed timing and still lists the 14-day plan.
+5. Lock the phone and verify the notification hides the medicine name. Open it
+   and verify Confirm, Snooze 10 min, and Skip update the same Today occurrence.
+6. Scan a prescription, choose on-device or consented cloud OCR, review the
    draft, and confirm that nothing is saved before the medication form.
-4. Create a caregiver invitation for a different phone number. Sign in as that
+7. Create a caregiver invitation for a different phone number. Sign in as that
    number, accept it, verify the plan is read-only, then revoke access as owner.
-5. In More, change language/privacy preferences, inspect actual sessions,
+8. In More, change language/privacy preferences, inspect actual sessions,
    revoke another device, and verify the guarded deletion confirmation.
 
 The debug APK is written to

@@ -214,6 +214,7 @@ class InMemoryPatientMedicationGateway implements PatientMedicationGateway {
   MedicationDraft? lastCreatedDraft;
   MedicationScheduleDraft? lastScheduleDraft;
   MedicationSchedulePlan? activeSchedule;
+  final Map<String, DoseOccurrenceSummary> doseOutcomes = {};
 
   @override
   Future<PatientProfile> createProfile({
@@ -308,17 +309,56 @@ class InMemoryPatientMedicationGateway implements PatientMedicationGateway {
     if (plan == null) return const [];
     return plan.occurrences
         .map(
-          (occurrence) => DoseOccurrenceSummary(
-            id: 'occurrence-1',
-            medicationName: medications.first.displayName,
-            plannedAt: occurrence.plannedAt,
-            plannedLocalDateTime: occurrence.plannedLocalDateTime,
-            quantityLabel: '1 tablet',
-            status: 'SCHEDULED',
-            version: 1,
-          ),
+          (occurrence) =>
+              doseOutcomes['occurrence-1'] ??
+              DoseOccurrenceSummary(
+                id: 'occurrence-1',
+                medicationName: medications.first.displayName,
+                plannedAt: occurrence.plannedAt,
+                plannedLocalDateTime: occurrence.plannedLocalDateTime,
+                quantityLabel: '1 tablet',
+                status: 'SCHEDULED',
+                version: 1,
+              ),
         )
         .toList(growable: false);
+  }
+
+  @override
+  Future<DoseOccurrenceSummary> commandDose({
+    required String accessToken,
+    required DoseCommand command,
+  }) async {
+    final now = command.clientAt.toUtc();
+    final updated = DoseOccurrenceSummary(
+      confirmedAt: command.action == DoseAction.confirm ? now : null,
+      id: command.occurrence.id,
+      medicationName: command.occurrence.medicationName,
+      missedAt: command.occurrence.missedAt,
+      plannedAt: command.occurrence.plannedAt,
+      plannedLocalDateTime: command.occurrence.plannedLocalDateTime,
+      quantityLabel: command.occurrence.quantityLabel,
+      reminderSentAt: command.occurrence.reminderSentAt,
+      responseDueAt: command.occurrence.responseDueAt,
+      ruleRevision: command.occurrence.ruleRevision,
+      snoozeCount: command.action == DoseAction.snooze
+          ? command.occurrence.snoozeCount + 1
+          : command.occurrence.snoozeCount,
+      snoozedUntil: command.action == DoseAction.snooze
+          ? now.add(Duration(minutes: command.snoozeMinutes ?? 10))
+          : null,
+      status: switch (command.action) {
+        DoseAction.confirm => 'CONFIRMED',
+        DoseAction.snooze => 'SNOOZED',
+        DoseAction.skip => 'SKIPPED',
+      },
+      timingClassification: command.action == DoseAction.confirm
+          ? (command.occurrence.status == 'MISSED' ? 'LATE' : 'ON_TIME')
+          : null,
+      version: command.occurrence.version + 1,
+    );
+    doseOutcomes[updated.id] = updated;
+    return updated;
   }
 
   @override

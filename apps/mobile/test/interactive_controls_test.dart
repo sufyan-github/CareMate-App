@@ -138,7 +138,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Notifications'), findsWidgets);
-    expect(find.text('No notifications yet'), findsOneWidget);
+    expect(find.text('Upcoming reminders'), findsOneWidget);
+    expect(
+      find.text(
+        'No unresolved dose reminders are scheduled in the next 14 days.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Care and Insights destinations contain operational actions', (

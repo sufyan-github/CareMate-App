@@ -1,11 +1,23 @@
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
 import 'package:flutter/material.dart';
+import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
+
+typedef DoseActionCallback =
+    Future<bool> Function(
+      DoseOccurrenceSummary occurrence,
+      DoseAction action, {
+      String? reason,
+      int? snoozeMinutes,
+    });
 
 class TodayPage extends StatelessWidget {
   const TodayPage({
     required this.onAddCaregiver,
     required this.onAddMedicine,
     required this.onScanPrescription,
+    this.onDoseAction,
+    this.onEnableReminders,
+    this.reminderReadiness,
     this.canManage = true,
     this.occurrences = const [],
     super.key,
@@ -14,6 +26,9 @@ class TodayPage extends StatelessWidget {
   final VoidCallback onAddCaregiver;
   final VoidCallback onAddMedicine;
   final VoidCallback onScanPrescription;
+  final DoseActionCallback? onDoseAction;
+  final Future<void> Function()? onEnableReminders;
+  final ReminderReadiness? reminderReadiness;
   final bool canManage;
   final List<DoseOccurrenceSummary> occurrences;
 
@@ -44,7 +59,10 @@ class TodayPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const _ReadinessCard(),
+                _ReadinessCard(
+                  onEnable: onEnableReminders,
+                  readiness: reminderReadiness,
+                ),
                 const SizedBox(height: 16),
                 if (occurrences.isEmpty)
                   _EmptyReminderCard(
@@ -52,7 +70,11 @@ class TodayPage extends StatelessWidget {
                     onAddMedicine: onAddMedicine,
                   )
                 else
-                  _OccurrenceList(occurrences: occurrences),
+                  _OccurrenceList(
+                    canManage: canManage,
+                    occurrences: occurrences,
+                    onDoseAction: onDoseAction,
+                  ),
                 if (canManage) ...[
                   const SizedBox(height: 24),
                   Text(
@@ -89,9 +111,15 @@ class TodayPage extends StatelessWidget {
 }
 
 class _OccurrenceList extends StatelessWidget {
-  const _OccurrenceList({required this.occurrences});
+  const _OccurrenceList({
+    required this.canManage,
+    required this.occurrences,
+    required this.onDoseAction,
+  });
 
+  final bool canManage;
   final List<DoseOccurrenceSummary> occurrences;
+  final DoseActionCallback? onDoseAction;
 
   @override
   Widget build(BuildContext context) {
@@ -106,26 +134,175 @@ class _OccurrenceList extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         ...occurrences.map(
-          (occurrence) => Card(
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: const Icon(Icons.medication_outlined),
-              ),
-              title: Text(
-                occurrence.medicationName,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              subtitle: Text(
-                '${_friendlyTime(occurrence.plannedLocalDateTime)} · ${occurrence.quantityLabel}',
-              ),
-              trailing: const Icon(Icons.chevron_right),
-            ),
+          (occurrence) => _DoseOccurrenceCard(
+            canManage: canManage,
+            occurrence: occurrence,
+            onDoseAction: onDoseAction,
           ),
         ),
       ],
     );
+  }
+}
+
+class _DoseOccurrenceCard extends StatelessWidget {
+  const _DoseOccurrenceCard({
+    required this.canManage,
+    required this.occurrence,
+    required this.onDoseAction,
+  });
+
+  final bool canManage;
+  final DoseOccurrenceSummary occurrence;
+  final DoseActionCallback? onDoseAction;
+
+  bool get _isDue =>
+      occurrence.status != 'SCHEDULED' ||
+      !occurrence.plannedAt.isAfter(DateTime.now());
+
+  bool get _canConfirm => const {
+    'SCHEDULED',
+    'REMINDER_SENT',
+    'SNOOZED',
+    'MISSED',
+  }.contains(occurrence.status);
+
+  bool get _canSnooze =>
+      const {'SCHEDULED', 'REMINDER_SENT'}.contains(occurrence.status);
+
+  bool get _canSkip => const {
+    'SCHEDULED',
+    'REMINDER_SENT',
+    'SNOOZED',
+  }.contains(occurrence.status);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: colors.primaryContainer,
+                  child: const Icon(Icons.medication_outlined),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        occurrence.medicationName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_friendlyTime(occurrence.plannedLocalDateTime)} · ${occurrence.quantityLabel}',
+                      ),
+                    ],
+                  ),
+                ),
+                _DoseStatusChip(status: occurrence.status),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(_statusMessage(occurrence)),
+            if (canManage && onDoseAction != null && _canConfirm && _isDue) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      key: Key('confirm-dose-${occurrence.id}'),
+                      onPressed: () => _runAction(context, DoseAction.confirm),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: Text(
+                        occurrence.status == 'MISSED'
+                            ? 'Confirm late'
+                            : 'Confirm',
+                      ),
+                    ),
+                  ),
+                  if (_canSnooze) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      key: Key('snooze-dose-${occurrence.id}'),
+                      onPressed: () => _runAction(
+                        context,
+                        DoseAction.snooze,
+                        snoozeMinutes: 10,
+                      ),
+                      child: const Text('Snooze'),
+                    ),
+                  ],
+                  if (_canSkip)
+                    TextButton(
+                      key: Key('skip-dose-${occurrence.id}'),
+                      onPressed: () => _confirmSkip(context),
+                      child: const Text('Skip'),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runAction(
+    BuildContext context,
+    DoseAction action, {
+    String? reason,
+    int? snoozeMinutes,
+  }) async {
+    final saved = await onDoseAction!(
+      occurrence,
+      action,
+      reason: reason,
+      snoozeMinutes: snoozeMinutes,
+    );
+    if (!context.mounted) return;
+    final message = saved
+        ? switch (action) {
+            DoseAction.confirm => 'Dose confirmation saved.',
+            DoseAction.snooze => 'Snoozed for $snoozeMinutes minutes',
+            DoseAction.skip => 'Dose marked skipped.',
+          }
+        : 'Could not save this dose action. Please try again.';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _confirmSkip(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Skip this planned dose?'),
+        content: const Text(
+          'CareMate will record your choice. This is not medical advice; contact a clinician or pharmacist if you are unsure.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Go back'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Mark skipped'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await _runAction(context, DoseAction.skip);
+    }
   }
 
   String _friendlyTime(String localDateTime) {
@@ -138,8 +315,55 @@ class _OccurrenceList extends StatelessWidget {
   }
 }
 
+class _DoseStatusChip extends StatelessWidget {
+  const _DoseStatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      label: Text(switch (status) {
+        'CONFIRMED' => 'Confirmed',
+        'SKIPPED' => 'Skipped',
+        'MISSED' => 'No outcome',
+        'SNOOZED' => 'Snoozed',
+        'NOT_SHARED' => 'Private',
+        _ => 'Planned',
+      }),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+String _statusMessage(DoseOccurrenceSummary occurrence) =>
+    switch (occurrence.status) {
+      'CONFIRMED' =>
+        occurrence.timingClassification == 'LATE'
+            ? 'Confirmed by you after the response window.'
+            : 'Confirmed by you',
+      'SKIPPED' => 'You marked this planned dose as skipped.',
+      'MISSED' =>
+        'CareMate did not receive an outcome by the response deadline.',
+      'SNOOZED' => 'Snoozed until ${_friendlyClock(occurrence.snoozedUntil)}.',
+      'NOT_SHARED' => 'The profile owner has kept dose outcomes private.',
+      _ => 'Report what you do when this planned dose is due.',
+    };
+
+String _friendlyClock(DateTime? value) {
+  if (value == null) return 'the selected time';
+  final local = value.toLocal();
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour >= 12 ? 'PM' : 'AM';
+  return '$hour:$minute $period';
+}
+
 class _ReadinessCard extends StatelessWidget {
-  const _ReadinessCard();
+  const _ReadinessCard({required this.onEnable, required this.readiness});
+
+  final Future<void> Function()? onEnable;
+  final ReminderReadiness? readiness;
 
   @override
   Widget build(BuildContext context) {
@@ -163,16 +387,27 @@ class _ReadinessCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Reminder setup',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    _title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  SizedBox(height: 3),
-                  Text('Add a medicine to check device reminder readiness.'),
+                  const SizedBox(height: 3),
+                  Text(_message),
+                  if (_showButton) ...[
+                    const SizedBox(height: 10),
+                    FilledButton(
+                      onPressed: onEnable,
+                      child: Text(
+                        readiness?.notificationsAllowed == true
+                            ? 'Improve timing'
+                            : 'Enable reminders',
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -180,6 +415,40 @@ class _ReadinessCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool get _showButton =>
+      onEnable != null &&
+      readiness?.supported == true &&
+      readiness?.channelBlocked != true &&
+      readiness?.ready != true;
+
+  String get _title {
+    final value = readiness;
+    if (value == null) return 'Checking reminders';
+    if (!value.supported) return 'Reminders unavailable';
+    if (!value.notificationsAllowed) return 'Reminders need permission';
+    if (!value.channelAllowed) return 'Reminder channel is blocked';
+    if (!value.exactAlarmsAllowed) return 'Reminder timing may vary';
+    return 'Reminders ready';
+  }
+
+  String get _message {
+    final value = readiness;
+    if (value == null) return 'Checking this device’s notification settings.';
+    if (!value.supported) {
+      return 'This device cannot schedule CareMate notifications.';
+    }
+    if (!value.notificationsAllowed) {
+      return 'Allow notifications so CareMate can show planned dose reminders.';
+    }
+    if (!value.channelAllowed) {
+      return 'Open Notifications, then use Android settings to allow the Medication reminders channel.';
+    }
+    if (!value.exactAlarmsAllowed) {
+      return 'Notifications are on, but Android may deliver dose reminders later than planned.';
+    }
+    return 'Notifications and precise alarm access are available on this device.';
   }
 }
 

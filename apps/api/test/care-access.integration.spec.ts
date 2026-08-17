@@ -179,6 +179,30 @@ describe("care access", () => {
       .query({ from: "2099-01-01", to: "2099-01-01" })
       .expect(200);
     expect(sharedOutcomes.body.data[0].status).toBe("SCHEDULED");
+    const occurrenceId = sharedOutcomes.body.data[0].id as string;
+    await request(app!.getHttpServer())
+      .get(`/api/v1/dose-occurrences/${occurrenceId}`)
+      .set("Authorization", caregiverAuthorization)
+      .expect(404);
+    const sharedOutcomeDetail = await request(app!.getHttpServer())
+      .get(`/api/v1/dose-occurrences/${occurrenceId}`)
+      .set("Authorization", outcomeCaregiver)
+      .expect(200);
+    expect(sharedOutcomeDetail.body.data).toMatchObject({
+      events: [],
+      id: occurrenceId,
+      status: "SCHEDULED",
+    });
+    await request(app!.getHttpServer())
+      .post(`/api/v1/dose-occurrences/${occurrenceId}/commands`)
+      .set("Authorization", outcomeCaregiver)
+      .send({
+        clientAt: "2099-01-01T08:00:00+06:00",
+        clientMutationId: "01K2CAREGIVERDOSECOMMAND001",
+        command: "CONFIRM",
+        expectedVersion: 1,
+      })
+      .expect(404);
     await request(app!.getHttpServer())
       .post(`/api/v1/patient-profiles/${profile.body.data.id}/medications`)
       .set("Authorization", caregiverAuthorization)

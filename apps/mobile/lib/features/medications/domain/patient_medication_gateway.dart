@@ -28,6 +28,10 @@ abstract interface class PatientMedicationGateway {
     required String profileId,
     required DateTime to,
   });
+  Future<DoseOccurrenceSummary> commandDose({
+    required String accessToken,
+    required DoseCommand command,
+  });
   Future<MedicationScheduleSummary> updateSchedule({
     required String accessToken,
     required MedicationScheduleDraft draft,

@@ -14,6 +14,8 @@ import 'package:caremate/features/prescription/data/mlkit_prescription_text_reco
 import 'package:caremate/features/prescription/data/http_prescription_extraction_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
+import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
+import 'package:caremate/features/reminders/data/flutter_reminder_scheduler.dart';
 import 'package:flutter/material.dart';
 
 class CareMateApp extends StatefulWidget {
@@ -24,6 +26,7 @@ class CareMateApp extends StatefulWidget {
     this.patientMedicationGateway,
     this.prescriptionExtractionGateway,
     this.prescriptionTextRecognizer,
+    this.reminderScheduler,
     super.key,
   });
 
@@ -33,6 +36,7 @@ class CareMateApp extends StatefulWidget {
   final PatientMedicationGateway? patientMedicationGateway;
   final PrescriptionExtractionGateway? prescriptionExtractionGateway;
   final PrescriptionTextRecognizer? prescriptionTextRecognizer;
+  final ReminderScheduler? reminderScheduler;
 
   @override
   State<CareMateApp> createState() => _CareMateAppState();
@@ -46,6 +50,7 @@ class _CareMateAppState extends State<CareMateApp> {
   late final PatientMedicationGateway _patientMedicationGateway;
   late final PrescriptionExtractionGateway _prescriptionExtractionGateway;
   late final PrescriptionTextRecognizer _prescriptionTextRecognizer;
+  late final ReminderScheduler _reminderScheduler;
 
   @override
   void initState() {
@@ -96,6 +101,7 @@ class _CareMateAppState extends State<CareMateApp> {
         );
     _prescriptionTextRecognizer =
         widget.prescriptionTextRecognizer ?? MlKitPrescriptionTextRecognizer();
+    _reminderScheduler = widget.reminderScheduler ?? FlutterReminderScheduler();
     _authCoordinator.initialize();
   }
 
@@ -125,6 +131,7 @@ class _CareMateAppState extends State<CareMateApp> {
             onLogout: _authCoordinator.logout,
             prescriptionExtractionGateway: _prescriptionExtractionGateway,
             prescriptionTextRecognizer: _prescriptionTextRecognizer,
+            reminderScheduler: _reminderScheduler,
           ),
           AuthStatus.signedOut ||
           AuthStatus.awaitingOtp => AuthFlowPage(coordinator: _authCoordinator),

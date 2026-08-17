@@ -74,7 +74,11 @@ class _AppShellState extends State<AppShell> {
         occurrences: widget.medicationCoordinator.doseOccurrences,
         onAddCaregiver: _openCaregiverInvitation,
         onAddMedicine: _openMedicationForm,
+        onDoseAction: widget.medicationCoordinator.commandDose,
+        onEnableReminders:
+            widget.medicationCoordinator.requestReminderPermissions,
         onScanPrescription: _openPrescriptionScan,
+        reminderReadiness: widget.medicationCoordinator.reminderReadiness,
       ),
       MedicationsPage(coordinator: widget.medicationCoordinator),
       CarePage(
@@ -110,7 +114,9 @@ class _AppShellState extends State<AppShell> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (_) => const NotificationsPage(),
+                builder: (_) => NotificationsPage(
+                  coordinator: widget.medicationCoordinator,
+                ),
               ),
             ),
             icon: const Icon(Icons.notifications_none),

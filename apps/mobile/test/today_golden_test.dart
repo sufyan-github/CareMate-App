@@ -1,4 +1,5 @@
 import 'package:caremate/app/caremate_app.dart';
+import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,6 +14,7 @@ void main() {
       CareMateApp(
         authCoordinator: authenticatedCoordinator(),
         patientMedicationGateway: existingPatientGateway(),
+        reminderScheduler: const UnsupportedReminderScheduler(),
       ),
     );
     await tester.pumpAndSettle();
