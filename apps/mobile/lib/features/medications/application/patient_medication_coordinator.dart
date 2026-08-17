@@ -247,6 +247,8 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     }
   }
 
+  Future<String> accessTokenForRequest() => _token();
+
   Future<void> requestReminderPermissions() async {
     try {
       reminderReadiness = await reminderScheduler.checkReadiness(request: true);

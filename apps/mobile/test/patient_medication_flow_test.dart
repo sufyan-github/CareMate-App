@@ -164,7 +164,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('End this schedule?'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, 'End schedule'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      for (var attempt = 0; attempt < 20; attempt += 1) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find.text('Schedule ended').evaluate().isNotEmpty) break;
+      }
       expect(find.text('Schedule ended'), findsOneWidget);
     },
   );

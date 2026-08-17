@@ -17,6 +17,7 @@ abstract final class CareMateTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
+      splashFactory: InkRipple.splashFactory,
       scaffoldBackgroundColor: colorScheme.surface,
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.surface,

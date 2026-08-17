@@ -2,6 +2,7 @@ import 'package:caremate/features/care/presentation/care_page.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/care/presentation/invite_caregiver_page.dart';
 import 'package:caremate/features/insights/presentation/insights_page.dart';
+import 'package:caremate/features/insights/domain/insights_gateway.dart';
 import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
 import 'package:caremate/features/medications/presentation/medications_page.dart';
 import 'package:caremate/features/more/presentation/more_page.dart';
@@ -18,6 +19,7 @@ class AppShell extends StatefulWidget {
     required this.accountSettingsGateway,
     required this.careAccessGateway,
     required this.medicationCoordinator,
+    required this.insightsGateway,
     required this.onLogout,
     required this.prescriptionExtractionGateway,
     required this.prescriptionTextRecognizer,
@@ -27,6 +29,7 @@ class AppShell extends StatefulWidget {
   final AccountSettingsGateway accountSettingsGateway;
   final CareAccessGateway careAccessGateway;
   final PatientMedicationCoordinator medicationCoordinator;
+  final InsightsGateway insightsGateway;
   final Future<void> Function() onLogout;
   final PrescriptionExtractionGateway prescriptionExtractionGateway;
   final PrescriptionTextRecognizer prescriptionTextRecognizer;
@@ -94,7 +97,11 @@ class _AppShellState extends State<AppShell> {
         profileId: widget.medicationCoordinator.profile!.id,
         patientDisplayName: widget.medicationCoordinator.profile!.displayName,
       ),
-      InsightsPage(coordinator: widget.medicationCoordinator),
+      InsightsPage(
+        coordinator: widget.medicationCoordinator,
+        gateway: widget.insightsGateway,
+        isActive: _selectedIndex == 3,
+      ),
       MorePage(
         accessToken: widget.medicationCoordinator.accessToken,
         gateway: widget.accountSettingsGateway,

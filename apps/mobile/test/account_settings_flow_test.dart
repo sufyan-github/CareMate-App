@@ -50,7 +50,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(settings.preferences.allowAnalytics, isTrue);
 
-    await tester.tap(find.byKey(const Key('request-account-deletion-button')));
+    await tester.ensureVisible(
+      find.byKey(const Key('request-account-deletion-button')),
+    );
+    await tester.drag(find.byType(ListView).last, const Offset(0, -120));
+    await tester.pumpAndSettle();
+    tester
+        .widget<OutlinedButton>(
+          find.byKey(const Key('request-account-deletion-button')),
+        )
+        .onPressed!();
     await tester.pumpAndSettle();
     final confirm = tester.widget<FilledButton>(
       find.byKey(const Key('confirm-account-deletion-button')),

@@ -10,6 +10,7 @@ Future<void> _pumpSignedInApp(WidgetTester tester) async {
       accountSettingsGateway: accountSettingsGateway(),
       authCoordinator: authenticatedCoordinator(),
       careAccessGateway: emptyCareAccessGateway(),
+      insightsGateway: insightsGateway(),
       patientMedicationGateway: existingPatientGateway(),
     ),
   );
@@ -162,6 +163,46 @@ void main() {
     await tester.tap(find.text('Insights'));
     await tester.pumpAndSettle();
     expect(find.text('Medication overview'), findsOneWidget);
+    expect(find.text('App-based adherence indicator'), findsOneWidget);
+    expect(find.text('50%'), findsOneWidget);
+    await tester.dragUntilVisible(
+      find.text('Low stock'),
+      find.byKey(const Key('insights-scroll-view')),
+      const Offset(0, -300),
+    );
+    expect(find.text('Low stock'), findsOneWidget);
+  });
+
+  testWidgets('records opening stock from the Insights inventory ledger', (
+    tester,
+  ) async {
+    final gateway = insightsGateway();
+    await tester.pumpWidget(
+      CareMateApp(
+        accountSettingsGateway: accountSettingsGateway(),
+        authCoordinator: authenticatedCoordinator(),
+        careAccessGateway: emptyCareAccessGateway(),
+        insightsGateway: gateway,
+        patientMedicationGateway: existingPatientGateway(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Insights'));
+    await tester.pumpAndSettle();
+
+    await tester.dragUntilVisible(
+      find.text('Set opening stock'),
+      find.byKey(const Key('insights-scroll-view')),
+      const Offset(0, -300),
+    );
+    await _tapVisible(tester, find.text('Set opening stock'));
+    await tester.enterText(find.byKey(const Key('stock-quantity-input')), '5');
+    await tester.tap(find.byKey(const Key('save-stock-adjustment-button')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.position.estimatedQuantity, 7);
+    expect(find.text('7 TABLET'), findsOneWidget);
+    expect(find.text('Estimated stock updated.'), findsOneWidget);
   });
 
   testWidgets('More settings rows open their detail pages', (tester) async {

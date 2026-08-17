@@ -30,8 +30,10 @@ apps/api/src/generated/
 .packages
 build/
 android/.gradle/
+**/android/.kotlin/
 android/local.properties
 ios/Flutter/ephemeral/
+**/test/failures/
 
 # IDE / operating system
 .idea/

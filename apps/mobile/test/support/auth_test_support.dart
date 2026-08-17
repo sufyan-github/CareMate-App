@@ -3,6 +3,8 @@ import 'package:caremate/features/auth/domain/auth_gateway.dart';
 import 'package:caremate/features/auth/domain/auth_models.dart';
 import 'package:caremate/features/auth/domain/session_store.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
+import 'package:caremate/features/insights/domain/insights_gateway.dart';
+import 'package:caremate/features/insights/domain/insights_models.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
 import 'package:caremate/features/more/domain/account_settings_gateway.dart';
@@ -32,6 +34,109 @@ InMemoryCareAccessGateway emptyCareAccessGateway() =>
 
 InMemoryAccountSettingsGateway accountSettingsGateway() =>
     InMemoryAccountSettingsGateway();
+
+InMemoryInsightsGateway insightsGateway() => InMemoryInsightsGateway();
+
+class InMemoryInsightsGateway implements InsightsGateway {
+  InventoryPositionSummary position = const InventoryPositionSummary(
+    adjustments: [],
+    estimatedDaysRemaining: 2,
+    estimatedQuantity: 2,
+    id: 'inventory-1',
+    isLowStock: true,
+    lowStockThreshold: 5,
+    medicationId: 'medication-1',
+    medicationName: 'Napa',
+    projectedRunOutAt: null,
+    quantityUnit: 'TABLET',
+    version: 1,
+  );
+
+  @override
+  Future<List<InventoryPositionSummary>> listInventory({
+    required String accessToken,
+    required String profileId,
+  }) async => [position];
+
+  @override
+  Future<AdherenceIndicator> getIndicator({
+    required String accessToken,
+    required DateTime from,
+    required String profileId,
+    required DateTime to,
+  }) async => AdherenceIndicator(
+    counts: const IndicatorCounts(
+      lateConfirmed: 0,
+      missed: 0,
+      onTimeConfirmed: 1,
+      skipped: 1,
+      unresolved: 1,
+    ),
+    denominator: 2,
+    disclaimer:
+        'This is an app-based summary of self-reported outcomes. It is not a clinical adherence measure.',
+    from: from,
+    numerator: 1,
+    percentage: 50,
+    timezone: 'Asia/Dhaka',
+    to: to,
+  );
+
+  @override
+  Future<InventoryPositionSummary> createStockAdjustment({
+    required String accessToken,
+    required double delta,
+    required String positionId,
+    required String quantityUnit,
+    required String reason,
+  }) async {
+    position = InventoryPositionSummary(
+      adjustments: [
+        StockAdjustmentSummary(
+          createdAt: DateTime.now(),
+          delta: delta,
+          id: 'adjustment-1',
+          reason: reason,
+        ),
+      ],
+      estimatedDaysRemaining: 7,
+      estimatedQuantity: position.estimatedQuantity + delta,
+      id: position.id,
+      isLowStock:
+          position.estimatedQuantity + delta <= position.lowStockThreshold,
+      lowStockThreshold: position.lowStockThreshold,
+      medicationId: position.medicationId,
+      medicationName: position.medicationName,
+      projectedRunOutAt: position.projectedRunOutAt,
+      quantityUnit: position.quantityUnit,
+      version: position.version,
+    );
+    return position;
+  }
+
+  @override
+  Future<InventoryPositionSummary> updateLowStockThreshold({
+    required String accessToken,
+    required int expectedVersion,
+    required double lowStockThreshold,
+    required String positionId,
+  }) async {
+    position = InventoryPositionSummary(
+      adjustments: position.adjustments,
+      estimatedDaysRemaining: position.estimatedDaysRemaining,
+      estimatedQuantity: position.estimatedQuantity,
+      id: position.id,
+      isLowStock: position.estimatedQuantity <= lowStockThreshold,
+      lowStockThreshold: lowStockThreshold,
+      medicationId: position.medicationId,
+      medicationName: position.medicationName,
+      projectedRunOutAt: position.projectedRunOutAt,
+      quantityUnit: position.quantityUnit,
+      version: position.version + 1,
+    );
+    return position;
+  }
+}
 
 class InMemoryAccountSettingsGateway implements AccountSettingsGateway {
   AccountPreferences preferences = const AccountPreferences(

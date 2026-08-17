@@ -4,6 +4,7 @@ import 'package:caremate/features/medications/application/patient_medication_coo
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/care/presentation/care_access_entry_page.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
+import 'package:caremate/features/insights/domain/insights_gateway.dart';
 import 'package:caremate/features/more/domain/account_settings_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
@@ -24,6 +25,7 @@ class AuthenticatedExperience extends StatefulWidget {
     required this.careAccessGateway,
     required this.gateway,
     required this.installationId,
+    required this.insightsGateway,
     required this.doseMutationStore,
     required this.doseSyncGateway,
     required this.onLogout,
@@ -42,6 +44,7 @@ class AuthenticatedExperience extends StatefulWidget {
   final CareAccessGateway careAccessGateway;
   final PatientMedicationGateway gateway;
   final Future<String> Function() installationId;
+  final InsightsGateway insightsGateway;
   final DoseMutationStore doseMutationStore;
   final DoseSyncGateway doseSyncGateway;
   final Future<void> Function() onLogout;
@@ -127,6 +130,7 @@ class _AuthenticatedExperienceState extends State<AuthenticatedExperience>
           accountSettingsGateway: widget.accountSettingsGateway,
           careAccessGateway: widget.careAccessGateway,
           medicationCoordinator: _coordinator,
+          insightsGateway: widget.insightsGateway,
           onLogout: widget.onLogout,
           prescriptionExtractionGateway: widget.prescriptionExtractionGateway,
           prescriptionTextRecognizer: widget.prescriptionTextRecognizer,

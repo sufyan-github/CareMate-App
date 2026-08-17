@@ -6,6 +6,8 @@ import 'package:caremate/features/auth/data/secure_session_store.dart';
 import 'package:caremate/features/auth/presentation/auth_flow_page.dart';
 import 'package:caremate/features/care/data/http_care_access_gateway.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
+import 'package:caremate/features/insights/data/http_insights_gateway.dart';
+import 'package:caremate/features/insights/domain/insights_gateway.dart';
 import 'package:caremate/features/medications/data/http_patient_medication_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/presentation/authenticated_experience.dart';
@@ -35,6 +37,7 @@ class CareMateApp extends StatefulWidget {
     this.backgroundSyncScheduler,
     this.careAccessGateway,
     this.patientMedicationGateway,
+    this.insightsGateway,
     this.doseMutationStore,
     this.doseSyncGateway,
     this.prescriptionExtractionGateway,
@@ -48,6 +51,7 @@ class CareMateApp extends StatefulWidget {
   final BackgroundSyncScheduler? backgroundSyncScheduler;
   final CareAccessGateway? careAccessGateway;
   final PatientMedicationGateway? patientMedicationGateway;
+  final InsightsGateway? insightsGateway;
   final DoseMutationStore? doseMutationStore;
   final DoseSyncGateway? doseSyncGateway;
   final PrescriptionExtractionGateway? prescriptionExtractionGateway;
@@ -67,6 +71,7 @@ class _CareMateAppState extends State<CareMateApp> {
   late final DoseMutationStore _doseMutationStore;
   late final DoseSyncGateway _doseSyncGateway;
   late final PatientMedicationGateway _patientMedicationGateway;
+  late final InsightsGateway _insightsGateway;
   late final PrescriptionExtractionGateway _prescriptionExtractionGateway;
   late final PrescriptionTextRecognizer _prescriptionTextRecognizer;
   late final ReminderScheduler _reminderScheduler;
@@ -107,6 +112,14 @@ class _CareMateAppState extends State<CareMateApp> {
     _patientMedicationGateway =
         widget.patientMedicationGateway ??
         HttpPatientMedicationGateway(
+          baseUrl: const String.fromEnvironment(
+            'API_BASE_URL',
+            defaultValue: 'http://10.0.2.2:3000/api/v1',
+          ),
+        );
+    _insightsGateway =
+        widget.insightsGateway ??
+        HttpInsightsGateway(
           baseUrl: const String.fromEnvironment(
             'API_BASE_URL',
             defaultValue: 'http://10.0.2.2:3000/api/v1',
@@ -191,6 +204,7 @@ class _CareMateAppState extends State<CareMateApp> {
             backgroundSyncScheduler: _backgroundSyncScheduler,
             careAccessGateway: _careAccessGateway,
             gateway: _patientMedicationGateway,
+            insightsGateway: _insightsGateway,
             installationId: _authCoordinator.sessionStore.installationId,
             doseMutationStore: _doseMutationStore,
             doseSyncGateway: _doseSyncGateway,
