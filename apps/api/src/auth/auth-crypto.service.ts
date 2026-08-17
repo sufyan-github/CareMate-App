@@ -27,6 +27,10 @@ export class AuthCryptoService {
   }
 
   encryptPhone(phoneNumber: string): string {
+    return this.encryptOpaqueValue(phoneNumber);
+  }
+
+  encryptOpaqueValue(value: string): string {
     const initializationVector = randomBytes(12);
     const cipher = createCipheriv(
       "aes-256-gcm",
@@ -34,7 +38,7 @@ export class AuthCryptoService {
       initializationVector,
     );
     const ciphertext = Buffer.concat([
-      cipher.update(phoneNumber, "utf8"),
+      cipher.update(value, "utf8"),
       cipher.final(),
     ]);
     const tag = cipher.getAuthTag();

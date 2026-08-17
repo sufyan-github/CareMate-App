@@ -65,10 +65,11 @@ class HttpAuthGateway implements AuthGateway {
       'refreshToken': refreshToken,
     });
     final data = body['data'] as Map<String, dynamic>;
+    final user = data['user'] as Map<String, dynamic>;
     return AuthSession(
       accessToken: data['accessToken'] as String,
       refreshToken: data['refreshToken'] as String,
-      userId: '',
+      userId: user['id'] as String,
     );
   }
 

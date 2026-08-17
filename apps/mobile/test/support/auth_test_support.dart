@@ -459,19 +459,26 @@ class _RestorableAuthGateway implements AuthGateway {
 }
 
 class _ExistingSessionStore implements SessionStore {
-  String? _refreshToken = 'existing-refresh';
+  AuthSession? _session = const AuthSession(
+    accessToken: 'existing-access',
+    refreshToken: 'existing-refresh',
+    userId: 'test-user',
+  );
 
   @override
-  Future<void> clear() async => _refreshToken = null;
+  Future<void> clear() async => _session = null;
 
   @override
   Future<String> installationId() async => 'test-installation';
 
   @override
-  Future<String?> readRefreshToken() async => _refreshToken;
+  Future<String?> readRefreshToken() async => _session?.refreshToken;
 
   @override
-  Future<void> writeRefreshToken(String token) async => _refreshToken = token;
+  Future<AuthSession?> readSession() async => _session;
+
+  @override
+  Future<void> writeSession(AuthSession session) async => _session = session;
 }
 
 class _EmptySessionStore implements SessionStore {
@@ -485,5 +492,8 @@ class _EmptySessionStore implements SessionStore {
   Future<String?> readRefreshToken() async => null;
 
   @override
-  Future<void> writeRefreshToken(String token) async {}
+  Future<AuthSession?> readSession() async => null;
+
+  @override
+  Future<void> writeSession(AuthSession session) async {}
 }

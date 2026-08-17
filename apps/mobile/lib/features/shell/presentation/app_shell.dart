@@ -77,8 +77,12 @@ class _AppShellState extends State<AppShell> {
         onDoseAction: widget.medicationCoordinator.commandDose,
         onEnableReminders:
             widget.medicationCoordinator.requestReminderPermissions,
+        onSyncNow: widget.medicationCoordinator.syncNow,
+        pendingSyncCount: widget.medicationCoordinator.pendingSyncCount,
         onScanPrescription: _openPrescriptionScan,
         reminderReadiness: widget.medicationCoordinator.reminderReadiness,
+        syncMessage: widget.medicationCoordinator.syncMessage,
+        usingOfflineCache: widget.medicationCoordinator.usingOfflineCache,
       ),
       MedicationsPage(coordinator: widget.medicationCoordinator),
       CarePage(

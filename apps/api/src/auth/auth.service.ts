@@ -282,6 +282,17 @@ export class AuthService {
           data: { revokedAt: now },
           where: { sessionId: credential.sessionId, revokedAt: null },
         });
+        await transaction.deviceInstallation.updateMany({
+          data: {
+            pushStatus: "UNREGISTERED",
+            pushTokenEncrypted: null,
+            pushTokenLookupHash: null,
+          },
+          where: {
+            installationId: credential.session.installationId,
+            userId: credential.session.userId,
+          },
+        });
         return { error: "REFRESH_TOKEN_REUSED" } as const;
       }
       if (
@@ -303,6 +314,21 @@ export class AuthService {
         await transaction.authSession.update({
           data: { reuseDetectedAt: now, revokedAt: now },
           where: { id: credential.sessionId },
+        });
+        await transaction.refreshCredential.updateMany({
+          data: { revokedAt: now },
+          where: { sessionId: credential.sessionId, revokedAt: null },
+        });
+        await transaction.deviceInstallation.updateMany({
+          data: {
+            pushStatus: "UNREGISTERED",
+            pushTokenEncrypted: null,
+            pushTokenLookupHash: null,
+          },
+          where: {
+            installationId: credential.session.installationId,
+            userId: credential.session.userId,
+          },
         });
         return { error: "REFRESH_TOKEN_REUSED" } as const;
       }
@@ -350,6 +376,7 @@ export class AuthService {
         expiresInSeconds: ACCESS_TOKEN_LIFETIME_SECONDS,
         refreshToken: result.refreshToken,
         tokenType: "Bearer",
+        user: { id: result.user.id },
       },
       meta: { requestId: `req_${ulid()}` },
     };
@@ -357,16 +384,33 @@ export class AuthService {
 
   async logout(sessionId: string): Promise<void> {
     const now = new Date();
-    await this.database.$transaction([
-      this.database.authSession.updateMany({
+    const session = await this.database.authSession.findUnique({
+      select: { installationId: true, userId: true },
+      where: { id: sessionId },
+    });
+    await this.database.$transaction(async (transaction) => {
+      await transaction.authSession.updateMany({
         data: { revokedAt: now },
         where: { id: sessionId, revokedAt: null },
-      }),
-      this.database.refreshCredential.updateMany({
+      });
+      await transaction.refreshCredential.updateMany({
         data: { revokedAt: now },
         where: { sessionId, revokedAt: null },
-      }),
-    ]);
+      });
+      if (session) {
+        await transaction.deviceInstallation.updateMany({
+          data: {
+            pushStatus: "UNREGISTERED",
+            pushTokenEncrypted: null,
+            pushTokenLookupHash: null,
+          },
+          where: {
+            installationId: session.installationId,
+            userId: session.userId,
+          },
+        });
+      }
+    });
   }
 
   async logoutAll(userId: string): Promise<void> {
@@ -388,6 +432,14 @@ export class AuthService {
       this.database.refreshCredential.updateMany({
         data: { revokedAt: now },
         where: { sessionId: { in: sessionIds }, revokedAt: null },
+      }),
+      this.database.deviceInstallation.updateMany({
+        data: {
+          pushStatus: "UNREGISTERED",
+          pushTokenEncrypted: null,
+          pushTokenLookupHash: null,
+        },
+        where: { userId },
       }),
     ]);
   }

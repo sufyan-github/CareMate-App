@@ -1,6 +1,8 @@
 import 'package:caremate/app/caremate_app.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
+import 'package:caremate/features/sync/domain/dose_sync_gateway.dart';
+import 'package:caremate/features/sync/domain/dose_sync_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -248,6 +250,7 @@ void main() {
       CareMateApp(
         authCoordinator: authenticatedCoordinator(),
         careAccessGateway: emptyCareAccessGateway(),
+        doseSyncGateway: const _AcceptingDoseSyncGateway(),
         patientMedicationGateway: patientGateway,
       ),
     );
@@ -259,12 +262,125 @@ void main() {
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Snooze'));
     await tester.pumpAndSettle();
-    expect(find.text('Snoozed for 10 minutes'), findsOneWidget);
-    expect(patientGateway.doseOutcomes['occurrence-1']?.status, 'SNOOZED');
+    expect(find.textContaining('Snoozed until'), findsOneWidget);
+    expect(find.text('Pending sync'), findsNothing);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
+    final confirmButton = find.widgetWithText(FilledButton, 'Confirm');
+    await tester.ensureVisible(confirmButton);
+    await tester.drag(
+      find.byKey(const PageStorageKey('today-page')),
+      const Offset(0, -120),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(confirmButton);
     await tester.pumpAndSettle();
     expect(find.text('Confirmed by you'), findsOneWidget);
-    expect(patientGateway.doseOutcomes['occurrence-1']?.status, 'CONFIRMED');
   });
+
+  testWidgets('shows an offline dose action as pending until sync succeeds', (
+    tester,
+  ) async {
+    final patientGateway = existingPatientGateway();
+    patientGateway.medications.add(
+      const MedicationSummary(
+        displayName: 'Napa',
+        form: 'TABLET',
+        id: 'medication-1',
+        quantityLabel: '1 tablet',
+        status: 'ACTIVE',
+        strengthLabel: '500 mg',
+      ),
+    );
+    patientGateway.activeSchedule = MedicationSchedulePlan(
+      occurrences: [
+        ScheduleOccurrencePreview(
+          plannedAt: DateTime.now().subtract(const Duration(minutes: 1)),
+          plannedLocalDateTime: '2026-08-17T08:00',
+        ),
+      ],
+      quantityRequired: 1,
+      quantityUnit: 'TABLET',
+      schedule: MedicationScheduleSummary(
+        endDate: DateTime(2026, 8, 17),
+        id: 'schedule-1',
+        revision: 1,
+        startDate: DateTime(2026, 8, 17),
+        status: 'ACTIVE',
+        times: const ['08:00'],
+        timezone: 'Asia/Dhaka',
+        version: 1,
+      ),
+    );
+    await tester.pumpWidget(
+      CareMateApp(
+        authCoordinator: authenticatedCoordinator(),
+        careAccessGateway: emptyCareAccessGateway(),
+        patientMedicationGateway: patientGateway,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Snooze'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pending sync'), findsOneWidget);
+    expect(find.text('1 saved change waiting to sync'), findsOneWidget);
+    expect(find.byKey(const Key('sync-now-button')), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Confirm'), findsNothing);
+    expect(
+      find.textContaining('Waiting for CareMate server confirmation'),
+      findsOneWidget,
+    );
+  });
+}
+
+class _AcceptingDoseSyncGateway implements DoseSyncGateway {
+  const _AcceptingDoseSyncGateway();
+
+  @override
+  Future<List<DoseSyncResult>> push(
+    String accessToken,
+    List<DoseSyncMutation> mutations,
+  ) async => mutations
+      .map(
+        (mutation) => DoseSyncResult(
+          authoritative: AuthoritativeDoseState(
+            confirmedAt: mutation.action == DoseAction.confirm
+                ? mutation.clientAt
+                : null,
+            id: mutation.occurrenceId,
+            reminderSentAt: mutation.clientAt,
+            responseDueAt: mutation.action == DoseAction.snooze
+                ? mutation.clientAt.add(const Duration(minutes: 70))
+                : null,
+            snoozeCount: mutation.action == DoseAction.snooze ? 1 : 0,
+            snoozedUntil: mutation.action == DoseAction.snooze
+                ? mutation.clientAt.add(const Duration(minutes: 10))
+                : null,
+            status: switch (mutation.action) {
+              DoseAction.confirm => 'CONFIRMED',
+              DoseAction.snooze => 'SNOOZED',
+              DoseAction.skip => 'SKIPPED',
+            },
+            timingClassification: mutation.action == DoseAction.confirm
+                ? 'ON_TIME'
+                : null,
+            version: mutation.expectedVersion + 1,
+          ),
+          mutationId: mutation.id,
+          status: SyncMutationStatus.accepted,
+        ),
+      )
+      .toList(growable: false);
+
+  @override
+  Future<void> registerInstallation({
+    required String accessToken,
+    required String appVersion,
+    required String deviceName,
+    required String installationId,
+    required String locale,
+    required String platform,
+    String? pushToken,
+  }) async {}
 }

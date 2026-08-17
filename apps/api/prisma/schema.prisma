@@ -15,23 +15,45 @@ model PlatformMetadata {
 }
 
 model User {
-  id                       String            @id
+  id                       String               @id
   phoneE164Encrypted       String
-  phoneLookupHash          String            @unique
-  status                   String            @default("ACTIVE")
-  locale                   String            @default("bn-BD")
-  tokenVersion             Int               @default(0)
-  showMedicineOnLockScreen Boolean           @default(false)
-  allowAnalytics           Boolean           @default(false)
-  createdAt                DateTime          @default(now())
-  updatedAt                DateTime          @updatedAt
+  phoneLookupHash          String               @unique
+  status                   String               @default("ACTIVE")
+  locale                   String               @default("bn-BD")
+  tokenVersion             Int                  @default(0)
+  showMedicineOnLockScreen Boolean              @default(false)
+  allowAnalytics           Boolean              @default(false)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
   deletedAt                DateTime?
   deletionRequestedAt      DateTime?
   sessions                 AuthSession[]
   patientProfiles          PatientProfile[]
-  careInvitationsSent      CareInvitation[]  @relation("CareInvitationInviter")
-  careInvitationsAccepted  CareInvitation[]  @relation("CareInvitationAcceptor")
+  careInvitationsSent      CareInvitation[]     @relation("CareInvitationInviter")
+  careInvitationsAccepted  CareInvitation[]     @relation("CareInvitationAcceptor")
   careAccessAuditEvents    CareAccessAudit[]
+  deviceInstallations      DeviceInstallation[]
+}
+
+model DeviceInstallation {
+  id                  String    @id
+  userId              String
+  installationId      String
+  platform            String
+  appVersion          String
+  deviceName          String
+  locale              String    @default("bn-BD")
+  pushTokenEncrypted  String?
+  pushTokenLookupHash String?   @unique
+  pushStatus          String    @default("UNREGISTERED")
+  status              String    @default("ACTIVE")
+  registeredAt        DateTime  @default(now())
+  lastSeenAt          DateTime  @default(now())
+  revokedAt           DateTime?
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, installationId])
+  @@index([installationId, status])
 }
 
 model OtpChallenge {
@@ -163,7 +185,7 @@ model OcrDraft {
 }
 
 model Medication {
-  id               String           @id
+  id               String               @id
   patientProfileId String
   displayName      String
   normalizedName   String?
@@ -171,11 +193,11 @@ model Medication {
   strengthUnit     String?
   form             String
   notes            String?
-  status           String           @default("ACTIVE")
-  version          Int              @default(1)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  patientProfile   PatientProfile   @relation(fields: [patientProfileId], references: [id])
+  status           String               @default("ACTIVE")
+  version          Int                  @default(1)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  patientProfile   PatientProfile       @relation(fields: [patientProfileId], references: [id])
   instructions     DoseInstruction?
   schedules        MedicationSchedule[]
   doseOccurrences  DoseOccurrence[]
@@ -195,56 +217,56 @@ model DoseInstruction {
 }
 
 model MedicationSchedule {
-  id             String           @id
-  medicationId   String
-  status         String           @default("ACTIVE")
-  timezone       String
-  startDate      String
-  endDate        String?
-  timesJson      String
-  recurrence     String           @default("DAILY")
-  daysOfWeekJson String           @default("[]")
-  excludedDatesJson String        @default("[]")
-  generationHorizonDays Int       @default(30)
-  generatedThroughDate String
-  timezonePolicy String           @default("LOCAL_TIME_ANCHORED")
-  revision       Int              @default(1)
-  version        Int              @default(1)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  medication     Medication       @relation(fields: [medicationId], references: [id], onDelete: Restrict)
-  occurrences    DoseOccurrence[]
+  id                    String           @id
+  medicationId          String
+  status                String           @default("ACTIVE")
+  timezone              String
+  startDate             String
+  endDate               String?
+  timesJson             String
+  recurrence            String           @default("DAILY")
+  daysOfWeekJson        String           @default("[]")
+  excludedDatesJson     String           @default("[]")
+  generationHorizonDays Int              @default(30)
+  generatedThroughDate  String
+  timezonePolicy        String           @default("LOCAL_TIME_ANCHORED")
+  revision              Int              @default(1)
+  version               Int              @default(1)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  medication            Medication       @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  occurrences           DoseOccurrence[]
 
   @@index([medicationId, status])
 }
 
 model DoseOccurrence {
-  id                       String             @id
-  scheduleId               String
-  medicationId             String
-  patientProfileId         String
-  ruleRevision             Int
-  plannedLocalDateTime     String
-  plannedAt                DateTime
-  timezone                 String
-  quantityValue            Float
-  quantityUnit             String
-  status                   String             @default("SCHEDULED")
-  version                  Int                @default(1)
-  reminderSentAt           DateTime?
-  snoozedUntil             DateTime?
-  responseDueAt            DateTime?
-  snoozeCount              Int                @default(0)
-  missedAt                 DateTime?
-  confirmedAt              DateTime?
-  timingClassification     String?
-  createdAt                DateTime           @default(now())
-  updatedAt                DateTime           @updatedAt
-  schedule                 MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
-  medication               Medication         @relation(fields: [medicationId], references: [id], onDelete: Restrict)
-  patientProfile           PatientProfile     @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
-  events                   DoseEvent[]
-  confirmation             DoseConfirmation?
+  id                   String             @id
+  scheduleId           String
+  medicationId         String
+  patientProfileId     String
+  ruleRevision         Int
+  plannedLocalDateTime String
+  plannedAt            DateTime
+  timezone             String
+  quantityValue        Float
+  quantityUnit         String
+  status               String             @default("SCHEDULED")
+  version              Int                @default(1)
+  reminderSentAt       DateTime?
+  snoozedUntil         DateTime?
+  responseDueAt        DateTime?
+  snoozeCount          Int                @default(0)
+  missedAt             DateTime?
+  confirmedAt          DateTime?
+  timingClassification String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  schedule             MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  medication           Medication         @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  patientProfile       PatientProfile     @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
+  events               DoseEvent[]
+  confirmation         DoseConfirmation?
 
   @@unique([scheduleId, plannedLocalDateTime, ruleRevision])
   @@index([patientProfileId, plannedAt])
@@ -254,9 +276,9 @@ model DoseOccurrence {
 model DoseEvent {
   id               String         @id
   occurrenceId     String
-  eventType         String
-  sequence          Int
-  actorUserId       String?
+  eventType        String
+  sequence         Int
+  actorUserId      String?
   clientMutationId String?        @unique
   clientAt         DateTime?
   serverAt         DateTime       @default(now())
@@ -264,18 +286,18 @@ model DoseEvent {
   resultJson       String?
   occurrence       DoseOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
 
-  @@index([occurrenceId, serverAt])
   @@unique([occurrenceId, sequence])
+  @@index([occurrenceId, serverAt])
 }
 
 model DoseConfirmation {
   id                   String         @id
   occurrenceId         String         @unique
-  actorUserId           String
-  authSessionId         String
+  actorUserId          String
+  authSessionId        String
   deviceInstallationId String
   timingClassification String
   confirmedAt          DateTime
-  clientAt              DateTime
-  occurrence            DoseOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+  clientAt             DateTime
+  occurrence           DoseOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
 }

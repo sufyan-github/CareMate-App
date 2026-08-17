@@ -17,7 +17,11 @@ class TodayPage extends StatelessWidget {
     required this.onScanPrescription,
     this.onDoseAction,
     this.onEnableReminders,
+    this.onSyncNow,
+    this.pendingSyncCount = 0,
     this.reminderReadiness,
+    this.syncMessage,
+    this.usingOfflineCache = false,
     this.canManage = true,
     this.occurrences = const [],
     super.key,
@@ -28,7 +32,11 @@ class TodayPage extends StatelessWidget {
   final VoidCallback onScanPrescription;
   final DoseActionCallback? onDoseAction;
   final Future<void> Function()? onEnableReminders;
+  final Future<void> Function()? onSyncNow;
+  final int pendingSyncCount;
   final ReminderReadiness? reminderReadiness;
+  final String? syncMessage;
+  final bool usingOfflineCache;
   final bool canManage;
   final List<DoseOccurrenceSummary> occurrences;
 
@@ -59,6 +67,17 @@ class TodayPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
+                if (pendingSyncCount > 0 ||
+                    usingOfflineCache ||
+                    syncMessage != null) ...[
+                  _SyncStatusCard(
+                    message: syncMessage,
+                    onSyncNow: onSyncNow,
+                    pendingCount: pendingSyncCount,
+                    usingOfflineCache: usingOfflineCache,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _ReadinessCard(
                   onEnable: onEnableReminders,
                   readiness: reminderReadiness,
@@ -207,12 +226,16 @@ class _DoseOccurrenceCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                _DoseStatusChip(status: occurrence.status),
+                _DoseStatusChip(occurrence: occurrence),
               ],
             ),
             const SizedBox(height: 10),
             Text(_statusMessage(occurrence)),
-            if (canManage && onDoseAction != null && _canConfirm && _isDue) ...[
+            if (canManage &&
+                onDoseAction != null &&
+                _canConfirm &&
+                _isDue &&
+                !occurrence.pendingSync) ...[
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -270,9 +293,10 @@ class _DoseOccurrenceCard extends StatelessWidget {
     if (!context.mounted) return;
     final message = saved
         ? switch (action) {
-            DoseAction.confirm => 'Dose confirmation saved.',
-            DoseAction.snooze => 'Snoozed for $snoozeMinutes minutes',
-            DoseAction.skip => 'Dose marked skipped.',
+            DoseAction.confirm => 'Dose action saved on this phone.',
+            DoseAction.snooze =>
+              'Snoozed for $snoozeMinutes minutes and saved on this phone.',
+            DoseAction.skip => 'Skip action saved on this phone.',
           }
         : 'Could not save this dose action. Please try again.';
     ScaffoldMessenger.of(context)
@@ -316,39 +340,48 @@ class _DoseOccurrenceCard extends StatelessWidget {
 }
 
 class _DoseStatusChip extends StatelessWidget {
-  const _DoseStatusChip({required this.status});
+  const _DoseStatusChip({required this.occurrence});
 
-  final String status;
+  final DoseOccurrenceSummary occurrence;
 
   @override
   Widget build(BuildContext context) {
     return Chip(
-      label: Text(switch (status) {
-        'CONFIRMED' => 'Confirmed',
-        'SKIPPED' => 'Skipped',
-        'MISSED' => 'No outcome',
-        'SNOOZED' => 'Snoozed',
-        'NOT_SHARED' => 'Private',
-        _ => 'Planned',
-      }),
+      label: Text(
+        occurrence.pendingSync
+            ? 'Pending sync'
+            : switch (occurrence.status) {
+                'CONFIRMED' => 'Confirmed',
+                'SKIPPED' => 'Skipped',
+                'MISSED' => 'No outcome',
+                'SNOOZED' => 'Snoozed',
+                'NOT_SHARED' => 'Private',
+                _ => 'Planned',
+              },
+      ),
       visualDensity: VisualDensity.compact,
     );
   }
 }
 
 String _statusMessage(DoseOccurrenceSummary occurrence) =>
-    switch (occurrence.status) {
-      'CONFIRMED' =>
-        occurrence.timingClassification == 'LATE'
-            ? 'Confirmed by you after the response window.'
-            : 'Confirmed by you',
-      'SKIPPED' => 'You marked this planned dose as skipped.',
-      'MISSED' =>
-        'CareMate did not receive an outcome by the response deadline.',
-      'SNOOZED' => 'Snoozed until ${_friendlyClock(occurrence.snoozedUntil)}.',
-      'NOT_SHARED' => 'The profile owner has kept dose outcomes private.',
-      _ => 'Report what you do when this planned dose is due.',
-    };
+    occurrence.pendingSync
+    ? 'Saved securely on this phone. Waiting for CareMate server confirmation.'
+    : occurrence.syncConflictCode != null
+    ? 'CareMate kept the latest server state after resolving this saved change.'
+    : switch (occurrence.status) {
+        'CONFIRMED' =>
+          occurrence.timingClassification == 'LATE'
+              ? 'Confirmed by you after the response window.'
+              : 'Confirmed by you',
+        'SKIPPED' => 'You marked this planned dose as skipped.',
+        'MISSED' =>
+          'CareMate did not receive an outcome by the response deadline.',
+        'SNOOZED' =>
+          'Snoozed until ${_friendlyClock(occurrence.snoozedUntil)}.',
+        'NOT_SHARED' => 'The profile owner has kept dose outcomes private.',
+        _ => 'Report what you do when this planned dose is due.',
+      };
 
 String _friendlyClock(DateTime? value) {
   if (value == null) return 'the selected time';
@@ -357,6 +390,69 @@ String _friendlyClock(DateTime? value) {
   final minute = local.minute.toString().padLeft(2, '0');
   final period = local.hour >= 12 ? 'PM' : 'AM';
   return '$hour:$minute $period';
+}
+
+class _SyncStatusCard extends StatelessWidget {
+  const _SyncStatusCard({
+    required this.message,
+    required this.onSyncNow,
+    required this.pendingCount,
+    required this.usingOfflineCache,
+  });
+
+  final String? message;
+  final Future<void> Function()? onSyncNow;
+  final int pendingCount;
+  final bool usingOfflineCache;
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = pendingCount > 0;
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(pending ? Icons.cloud_upload_outlined : Icons.cloud_off),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pending
+                        ? '$pendingCount saved change${pendingCount == 1 ? '' : 's'} waiting to sync'
+                        : usingOfflineCache
+                        ? 'Showing the saved plan on this phone'
+                        : 'Sync status',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message ??
+                        (pending
+                            ? 'CareMate will retry automatically when Android allows network work.'
+                            : 'You can continue using today’s saved plan while offline.'),
+                  ),
+                  if (onSyncNow != null) ...[
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      key: const Key('sync-now-button'),
+                      onPressed: onSyncNow,
+                      icon: const Icon(Icons.sync),
+                      label: const Text('Sync now'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ReadinessCard extends StatelessWidget {

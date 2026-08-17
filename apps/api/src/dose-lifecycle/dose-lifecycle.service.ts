@@ -24,6 +24,11 @@ interface DoseCommandResult {
   version: number;
 }
 
+interface AppliedDoseCommand {
+  alreadyApplied: boolean;
+  data: DoseCommandResult;
+}
+
 @Injectable()
 export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
   private repairTimer: NodeJS.Timeout | undefined;
@@ -101,7 +106,10 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
         });
         if (prior) {
           this.assertMutationOwner(prior, userId, occurrenceId);
-          return JSON.parse(prior.resultJson!) as DoseCommandResult;
+          return {
+            alreadyApplied: true,
+            data: JSON.parse(prior.resultJson!) as DoseCommandResult,
+          } satisfies AppliedDoseCommand;
         }
 
         const occurrence = await transaction.doseOccurrence.findFirst({
@@ -198,7 +206,7 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
               sequence: nextEventSequence,
             },
           });
-          return result;
+          return { alreadyApplied: false, data: result };
         }
 
         if (input.command === "SKIP") {
@@ -251,7 +259,7 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
               sequence: nextEventSequence,
             },
           });
-          return result;
+          return { alreadyApplied: false, data: result };
         }
 
         if (
@@ -343,20 +351,19 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
             sequence: nextEventSequence + (becameMissed ? 1 : 0),
           },
         });
-        return result;
+        return { alreadyApplied: false, data: result };
       });
-      return this.response(data);
+      return this.response(data.data, data.alreadyApplied);
     } catch (error) {
-      if (this.isUniqueConstraint(error)) {
-        const prior = await this.database.doseEvent.findUnique({
-          where: { clientMutationId: input.clientMutationId },
-        });
-        if (prior) {
-          this.assertMutationOwner(prior, userId, occurrenceId);
-          return this.response(
-            JSON.parse(prior.resultJson!) as DoseCommandResult,
-          );
-        }
+      const prior = await this.database.doseEvent.findUnique({
+        where: { clientMutationId: input.clientMutationId },
+      });
+      if (prior) {
+        this.assertMutationOwner(prior, userId, occurrenceId);
+        return this.response(
+          JSON.parse(prior.resultJson!) as DoseCommandResult,
+          true,
+        );
       }
       throw error;
     }
@@ -579,15 +586,6 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  private isUniqueConstraint(error: unknown): boolean {
-    return (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      (error as { code?: unknown }).code === "P2002"
-    );
-  }
-
   private graceMinutes(): number {
     const configured = Number(this.config.get<string>("DOSE_GRACE_MINUTES"));
     if (!Number.isInteger(configured) || configured < 5 || configured > 240) {
@@ -607,7 +605,10 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
     return seconds * 1_000;
   }
 
-  private response(data: unknown) {
-    return { data, meta: { requestId: `req_${ulid()}` } };
+  private response(data: unknown, alreadyApplied = false) {
+    return {
+      data,
+      meta: { alreadyApplied, requestId: `req_${ulid()}` },
+    };
   }
 }

@@ -43,6 +43,10 @@ dependencies:
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
   uuid: ^4.6.0
+  drift: 2.34.0
+  path: ^1.9.1
+  path_provider: ^2.1.6
+  workmanager: ^0.9.0+3
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +58,13 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  build_runner: 2.15.1
+  drift_dev: 2.34.0
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

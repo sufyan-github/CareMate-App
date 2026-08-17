@@ -2,6 +2,7 @@ import 'package:caremate/app/caremate_app.dart';
 import 'package:caremate/features/auth/application/auth_coordinator.dart';
 import 'package:caremate/features/auth/domain/auth_gateway.dart';
 import 'package:caremate/features/auth/domain/auth_models.dart';
+import 'package:caremate/features/auth/domain/refresh_session_lock.dart';
 import 'package:caremate/features/auth/domain/session_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,52 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/auth_test_support.dart';
 
 void main() {
+  test('restores the cached secure session when refresh is offline', () async {
+    const cached = AuthSession(
+      accessToken: 'cached-access',
+      refreshToken: 'cached-refresh',
+      userId: 'user-1',
+    );
+    final store = _MemorySessionStore()..session = cached;
+    final coordinator = AuthCoordinator(
+      gateway: _OfflineRefreshAuthGateway(),
+      sessionStore: store,
+    );
+
+    await coordinator.initialize();
+
+    expect(coordinator.status, AuthStatus.signedIn);
+    expect(coordinator.session?.userId, cached.userId);
+    expect(store.session, cached);
+  });
+
+  test(
+    'serializes refresh rotation and rereads the latest credential',
+    () async {
+      const cached = AuthSession(
+        accessToken: 'access-0',
+        refreshToken: 'refresh-0',
+        userId: 'user-1',
+      );
+      final store = _MemorySessionStore()..session = cached;
+      final gateway = _RotatingAuthGateway();
+      final coordinator = AuthCoordinator(
+        gateway: gateway,
+        refreshLock: _SerialRefreshSessionLock(),
+        sessionStore: store,
+      );
+
+      final tokens = await Future.wait([
+        coordinator.refreshAccessToken(),
+        coordinator.refreshAccessToken(),
+      ]);
+
+      expect(tokens, ['access-1', 'access-2']);
+      expect(gateway.receivedRefreshTokens, ['refresh-0', 'refresh-1']);
+      expect(store.refreshToken, 'refresh-2');
+    },
+  );
+
   testWidgets('requests and verifies a development login code', (tester) async {
     final store = _MemorySessionStore();
     final coordinator = AuthCoordinator(
@@ -88,17 +135,55 @@ class _FakeAuthGateway implements AuthGateway {
 }
 
 class _MemorySessionStore implements SessionStore {
-  String? refreshToken;
+  AuthSession? session;
+
+  String? get refreshToken => session?.refreshToken;
 
   @override
-  Future<void> clear() async => refreshToken = null;
+  Future<void> clear() async => session = null;
 
   @override
   Future<String> installationId() async => '01K2DEVICE0000000000000001';
 
   @override
-  Future<String?> readRefreshToken() async => refreshToken;
+  Future<String?> readRefreshToken() async => session?.refreshToken;
 
   @override
-  Future<void> writeRefreshToken(String token) async => refreshToken = token;
+  Future<AuthSession?> readSession() async => session;
+
+  @override
+  Future<void> writeSession(AuthSession value) async => session = value;
+}
+
+class _OfflineRefreshAuthGateway extends _FakeAuthGateway {
+  @override
+  Future<AuthSession> refresh(String refreshToken) =>
+      throw const AuthFailure('NETWORK_UNAVAILABLE', 'CareMate is offline.');
+}
+
+class _RotatingAuthGateway extends _FakeAuthGateway {
+  final List<String> receivedRefreshTokens = [];
+
+  @override
+  Future<AuthSession> refresh(String refreshToken) async {
+    receivedRefreshTokens.add(refreshToken);
+    await Future<void>.delayed(Duration.zero);
+    final revision = receivedRefreshTokens.length;
+    return AuthSession(
+      accessToken: 'access-$revision',
+      refreshToken: 'refresh-$revision',
+      userId: 'user-1',
+    );
+  }
+}
+
+class _SerialRefreshSessionLock implements RefreshSessionLock {
+  Future<void> _tail = Future<void>.value();
+
+  @override
+  Future<T> synchronized<T>(Future<T> Function() operation) {
+    final result = _tail.then((_) => operation());
+    _tail = result.then<void>((_) {}, onError: (_) {});
+    return result;
+  }
 }

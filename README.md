@@ -32,6 +32,14 @@ CareMate is a Bangladesh-first medication-support and family-care platform speci
   rolling 14-day reconciliation window
 - Operational Today dose actions and notification centre with explicit
   permission/timing guidance and upcoming planned reminders
+- Account-scoped, SQLCipher-compatible Drift storage for the saved profile,
+  medication plan, Dose Occurrences, and immutable offline Sync Mutations
+- Local-first dose actions with optimistic pending state, safe rollback on
+  rejection, authoritative conflict resolution, manual sync, and encrypted
+  cold-start use when the API is unreachable
+- Batched idempotent Sync Mutation API, session-bound device installation
+  registration, rotating background token refresh, and constrained Android
+  WorkManager retries
 - Separate caregiver permissions for medication-plan timing and private
   self-reported dose outcomes
 - Prescription capture with on-device fallback, explicit cloud consent,
@@ -110,6 +118,13 @@ number and use OTP `123456`. Then verify these flows:
    number, accept it, verify the plan is read-only, then revoke access as owner.
 8. In More, change language/privacy preferences, inspect actual sessions,
    revoke another device, and verify the guarded deletion confirmation.
+9. While online, open Today once so the confirmed plan is cached. Stop the API
+   or remove the physical-phone tunnel, force-stop CareMate, and reopen it.
+   Verify “Showing the saved plan on this phone” appears without signing out.
+10. With a due Dose Occurrence and the API unavailable, choose Confirm,
+    Snooze, or Skip. Verify “Pending sync” appears and the action buttons are
+    hidden. Reopen the app to prove the change survived, restore the API, then
+    choose “Sync now” and verify the server state replaces the pending state.
 
 The debug APK is written to
 `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`.
@@ -137,3 +152,7 @@ The current login delivery Adapter is intentionally marked as development-only
 and uses the configured demo code. Production login SMS, bdapps carrier billing,
 and bKash payments remain gated by provider approval and certification as
 described in the specification.
+
+Device installation metadata is registered now. A real FCM token is not
+collected until Firebase project credentials and platform configuration are
+provided; local Android alarms remain the medication reminder authority.

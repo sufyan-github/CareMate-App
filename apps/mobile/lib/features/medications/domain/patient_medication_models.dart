@@ -140,6 +140,7 @@ class DoseOccurrenceSummary {
     required this.id,
     required this.medicationName,
     this.missedAt,
+    this.pendingSync = false,
     required this.plannedAt,
     required this.plannedLocalDateTime,
     required this.quantityLabel,
@@ -149,6 +150,7 @@ class DoseOccurrenceSummary {
     this.snoozeCount = 0,
     this.snoozedUntil,
     required this.status,
+    this.syncConflictCode,
     this.timingClassification,
     required this.version,
   });
@@ -157,6 +159,7 @@ class DoseOccurrenceSummary {
   final String id;
   final String medicationName;
   final DateTime? missedAt;
+  final bool pendingSync;
   final DateTime plannedAt;
   final String plannedLocalDateTime;
   final String quantityLabel;
@@ -166,6 +169,7 @@ class DoseOccurrenceSummary {
   final int snoozeCount;
   final DateTime? snoozedUntil;
   final String status;
+  final String? syncConflictCode;
   final String? timingClassification;
   final int version;
 }

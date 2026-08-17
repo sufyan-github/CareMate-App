@@ -151,6 +151,7 @@ describe("CareMate authentication", () => {
       .expect(201);
 
     expect(rotated.body.data.refreshToken).not.toBe(firstRefreshToken);
+    expect(rotated.body.data.user).toEqual({ id: login.body.data.user.id });
 
     const reuse = await request(app!.getHttpServer())
       .post("/api/v1/auth/token/refresh")

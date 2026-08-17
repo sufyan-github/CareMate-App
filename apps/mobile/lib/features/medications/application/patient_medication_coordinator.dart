@@ -3,20 +3,24 @@ import 'dart:async';
 import 'package:caremate/features/auth/domain/auth_models.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
-import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
+import 'package:caremate/features/sync/application/dose_sync_coordinator.dart';
+import 'package:flutter/foundation.dart';
 
 enum PatientMedicationStatus { loading, needsProfile, ready, error }
 
 class PatientMedicationCoordinator extends ChangeNotifier {
   PatientMedicationCoordinator({
     required this.accessToken,
+    Future<String> Function()? accessTokenProvider,
+    required this.doseSync,
     required this.gateway,
     required this.reminderScheduler,
-  });
+  }) : _accessTokenProvider = accessTokenProvider ?? (() async => accessToken);
 
-  final String accessToken;
+  String accessToken;
+  final Future<String> Function() _accessTokenProvider;
+  final DoseSyncCoordinator doseSync;
   final PatientMedicationGateway gateway;
   final ReminderScheduler reminderScheduler;
 
@@ -28,6 +32,9 @@ class PatientMedicationCoordinator extends ChangeNotifier {
   String? errorMessage;
   bool isSaving = false;
   ReminderReadiness? reminderReadiness;
+  int pendingSyncCount = 0;
+  bool usingOfflineCache = false;
+  String? syncMessage;
   bool _disposed = false;
 
   @override
@@ -36,10 +43,26 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> initialize() async {
+  Future<void> initialize({String? userId}) async {
     try {
-      final profiles = await gateway.listProfiles(accessToken);
+      if (userId != null) await doseSync.bindAccount(userId);
+      List<PatientProfile> profiles;
+      try {
+        profiles = await gateway.listProfiles(await _token());
+        await doseSync.cacheProfiles(profiles);
+        usingOfflineCache = false;
+      } on AuthFailure catch (failure) {
+        if (failure.code != 'NETWORK_UNAVAILABLE') rethrow;
+        profiles = await doseSync.cachedProfiles();
+        usingOfflineCache = true;
+      }
       if (profiles.isEmpty) {
+        if (usingOfflineCache) {
+          throw const AuthFailure(
+            'OFFLINE_CACHE_EMPTY',
+            'CareMate is offline and this phone has no saved profile yet.',
+          );
+        }
         status = PatientMedicationStatus.needsProfile;
       } else {
         profile = profiles.first;
@@ -51,6 +74,10 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     } on AuthFailure catch (failure) {
       errorMessage = failure.message;
       status = PatientMedicationStatus.error;
+    } on Object {
+      errorMessage =
+          'CareMate could not open its secure offline storage. Restart the app and try again.';
+      status = PatientMedicationStatus.error;
     }
     notifyListeners();
   }
@@ -58,10 +85,11 @@ class PatientMedicationCoordinator extends ChangeNotifier {
   Future<bool> createProfile(String displayName) async {
     return _save(() async {
       profile = await gateway.createProfile(
-        accessToken: accessToken,
+        accessToken: await _token(),
         displayName: displayName,
         timezone: 'Asia/Dhaka',
       );
+      await doseSync.cacheProfiles([profile!]);
       medications = const [];
       status = PatientMedicationStatus.ready;
       unawaited(_initializeReminders());
@@ -73,11 +101,12 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     if (activeProfile == null) return false;
     return _save(() async {
       final created = await gateway.createMedication(
-        accessToken: accessToken,
+        accessToken: await _token(),
         draft: draft,
         profileId: activeProfile.id,
       );
       medications = [created, ...medications];
+      await doseSync.cacheMedications(activeProfile.id, medications);
     });
   }
 
@@ -86,8 +115,8 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     MedicationScheduleDraft draft,
   ) async {
     return _scheduleOperation(
-      () => gateway.createSchedule(
-        accessToken: accessToken,
+      () async => gateway.createSchedule(
+        accessToken: await _token(),
         activation: 'PREVIEW',
         draft: draft,
         medicationId: medicationId,
@@ -100,8 +129,8 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     MedicationScheduleDraft draft,
   ) async {
     final plan = await _scheduleOperation(
-      () => gateway.createSchedule(
-        accessToken: accessToken,
+      () async => gateway.createSchedule(
+        accessToken: await _token(),
         activation: 'ACTIVATE',
         draft: draft,
         medicationId: medicationId,
@@ -111,6 +140,7 @@ class PatientMedicationCoordinator extends ChangeNotifier {
       if (plan.schedule case final schedule?) {
         _replaceSchedule(medicationId, schedule);
       }
+      await doseSync.cacheMedications(profile!.id, medications);
       await _loadDoseOccurrences();
       await _reconcileReminders();
       notifyListeners();
@@ -124,14 +154,15 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     MedicationScheduleDraft draft,
   ) async {
     final updated = await _scheduleOperation(
-      () => gateway.updateSchedule(
-        accessToken: accessToken,
+      () async => gateway.updateSchedule(
+        accessToken: await _token(),
         draft: draft,
         schedule: schedule,
       ),
     );
     if (updated != null) {
       _replaceSchedule(medicationId, updated);
+      await doseSync.cacheMedications(profile!.id, medications);
       await _loadDoseOccurrences();
       await _reconcileReminders();
       notifyListeners();
@@ -145,8 +176,8 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     ScheduleAction action,
   ) async {
     final updated = await _scheduleOperation(
-      () => gateway.commandSchedule(
-        accessToken: accessToken,
+      () async => gateway.commandSchedule(
+        accessToken: await _token(),
         action: action,
         schedule: schedule,
       ),
@@ -156,6 +187,7 @@ class PatientMedicationCoordinator extends ChangeNotifier {
         medicationId,
         updated.status == 'ENDED' ? null : updated,
       );
+      await doseSync.cacheMedications(profile!.id, medications);
       await _loadDoseOccurrences();
       await _reconcileReminders();
       notifyListeners();
@@ -169,17 +201,13 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     String? reason,
     int? snoozeMinutes,
   }) async {
-    return _save(() async {
-      final updated = await gateway.commandDose(
-        accessToken: accessToken,
-        command: DoseCommand(
-          action: action,
-          clientAt: DateTime.now(),
-          clientMutationId: const Uuid().v7(),
-          occurrence: occurrence,
-          reason: reason,
-          snoozeMinutes: snoozeMinutes,
-        ),
+    var accepted = false;
+    final saved = await _save(() async {
+      final updated = await doseSync.record(
+        occurrence,
+        action,
+        reason: reason,
+        snoozeMinutes: snoozeMinutes,
       );
       doseOccurrences = doseOccurrences
           .map((item) => item.id == updated.id ? updated : item)
@@ -187,8 +215,36 @@ class PatientMedicationCoordinator extends ChangeNotifier {
       reminderOccurrences = reminderOccurrences
           .map((item) => item.id == updated.id ? updated : item)
           .toList(growable: false);
+      pendingSyncCount = await doseSync.pendingCount();
+      accepted = updated.syncConflictCode == null;
+      syncMessage = updated.pendingSync
+          ? 'Saved on this phone. Waiting to sync.'
+          : accepted
+          ? 'Synced with CareMate.'
+          : 'CareMate kept the latest server state. Review this dose before trying again.';
       await _reconcileReminders();
     });
+    return saved && accepted;
+  }
+
+  Future<void> syncNow() async {
+    if (isSaving) return;
+    isSaving = true;
+    syncMessage = null;
+    notifyListeners();
+    try {
+      final resolved = await doseSync.syncNow();
+      await _loadDoseOccurrences();
+      syncMessage = resolved == 0
+          ? 'Everything is already synced.'
+          : 'Synced $resolved saved change${resolved == 1 ? '' : 's'}.';
+      errorMessage = null;
+    } on AuthFailure catch (failure) {
+      syncMessage = failure.message;
+    } finally {
+      isSaving = false;
+      if (!_disposed) notifyListeners();
+    }
   }
 
   Future<void> requestReminderPermissions() async {
@@ -217,6 +273,11 @@ class PatientMedicationCoordinator extends ChangeNotifier {
   Future<void> refreshAfterAppResume() async {
     if (status != PatientMedicationStatus.ready || _disposed) return;
     try {
+      try {
+        await doseSync.syncNow();
+      } on AuthFailure {
+        // Cached data remains authoritative for the immediate offline UX.
+      }
       await _loadDoseOccurrences();
       reminderReadiness = await reminderScheduler.checkReadiness();
       await _reconcileReminders();
@@ -233,10 +294,17 @@ class PatientMedicationCoordinator extends ChangeNotifier {
   }
 
   Future<void> _loadMedications() async {
-    medications = await gateway.listMedications(
-      accessToken: accessToken,
-      profileId: profile!.id,
-    );
+    try {
+      medications = await gateway.listMedications(
+        accessToken: await _token(),
+        profileId: profile!.id,
+      );
+      await doseSync.cacheMedications(profile!.id, medications);
+    } on AuthFailure catch (failure) {
+      if (failure.code != 'NETWORK_UNAVAILABLE') rethrow;
+      medications = await doseSync.cachedMedications(profile!.id);
+      usingOfflineCache = true;
+    }
     await _loadDoseOccurrences();
   }
 
@@ -245,18 +313,41 @@ class PatientMedicationCoordinator extends ChangeNotifier {
     if (activeProfile == null) return;
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day);
-    doseOccurrences = await gateway.listDoseOccurrences(
-      accessToken: accessToken,
+    final end = start.add(const Duration(days: 13));
+    try {
+      final serverOccurrences = await gateway.listDoseOccurrences(
+        accessToken: await _token(),
+        from: start,
+        profileId: activeProfile.id,
+        to: end,
+      );
+      await doseSync.cache(activeProfile.id, serverOccurrences);
+      usingOfflineCache = false;
+    } on AuthFailure catch (failure) {
+      if (failure.code != 'NETWORK_UNAVAILABLE') rethrow;
+      usingOfflineCache = true;
+    }
+    reminderOccurrences = await doseSync.cached(
+      activeProfile.id,
       from: start,
-      profileId: activeProfile.id,
-      to: start,
+      to: end,
     );
-    reminderOccurrences = await gateway.listDoseOccurrences(
-      accessToken: accessToken,
-      from: start,
-      profileId: activeProfile.id,
-      to: start.add(const Duration(days: 13)),
-    );
+    doseOccurrences = reminderOccurrences
+        .where(
+          (occurrence) =>
+              occurrence.plannedLocalDateTime.substring(0, 10) ==
+              _localDate(start),
+        )
+        .toList(growable: false);
+    pendingSyncCount = await doseSync.pendingCount();
+  }
+
+  String _localDate(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  Future<String> _token() async {
+    accessToken = await _accessTokenProvider();
+    return accessToken;
   }
 
   Future<void> _initializeReminders() async {

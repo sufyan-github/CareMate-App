@@ -10,28 +10,46 @@ import 'package:caremate/features/prescription/domain/prescription_extraction_ga
 import 'package:caremate/features/shell/presentation/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
+import 'package:caremate/features/sync/application/dose_sync_coordinator.dart';
+import 'package:caremate/features/sync/domain/background_sync_scheduler.dart';
+import 'package:caremate/features/sync/domain/dose_sync_gateway.dart';
+import 'package:caremate/features/sync/domain/dose_sync_models.dart';
 
 class AuthenticatedExperience extends StatefulWidget {
   const AuthenticatedExperience({
     required this.accountSettingsGateway,
     required this.accessToken,
+    required this.accessTokenProvider,
+    required this.backgroundSyncScheduler,
     required this.careAccessGateway,
     required this.gateway,
+    required this.installationId,
+    required this.doseMutationStore,
+    required this.doseSyncGateway,
     required this.onLogout,
     required this.prescriptionExtractionGateway,
     required this.prescriptionTextRecognizer,
     required this.reminderScheduler,
+    required this.refreshAccessToken,
+    required this.userId,
     super.key,
   });
 
   final AccountSettingsGateway accountSettingsGateway;
   final String accessToken;
+  final Future<String> Function() accessTokenProvider;
+  final BackgroundSyncScheduler backgroundSyncScheduler;
   final CareAccessGateway careAccessGateway;
   final PatientMedicationGateway gateway;
+  final Future<String> Function() installationId;
+  final DoseMutationStore doseMutationStore;
+  final DoseSyncGateway doseSyncGateway;
   final Future<void> Function() onLogout;
   final PrescriptionExtractionGateway prescriptionExtractionGateway;
   final PrescriptionTextRecognizer prescriptionTextRecognizer;
   final ReminderScheduler reminderScheduler;
+  final Future<String> Function() refreshAccessToken;
+  final String userId;
 
   @override
   State<AuthenticatedExperience> createState() =>
@@ -46,11 +64,36 @@ class _AuthenticatedExperienceState extends State<AuthenticatedExperience>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final doseSync = DoseSyncCoordinator(
+      accessToken: widget.accessTokenProvider,
+      backgroundScheduler: widget.backgroundSyncScheduler,
+      gateway: widget.doseSyncGateway,
+      installationId: widget.installationId,
+      refreshAccessToken: widget.refreshAccessToken,
+      store: widget.doseMutationStore,
+    );
     _coordinator = PatientMedicationCoordinator(
       accessToken: widget.accessToken,
+      accessTokenProvider: widget.accessTokenProvider,
+      doseSync: doseSync,
       gateway: widget.gateway,
       reminderScheduler: widget.reminderScheduler,
-    )..initialize();
+    );
+    unawaited(_initializeCoordinator());
+    unawaited(_registerInstallation(doseSync));
+  }
+
+  Future<void> _initializeCoordinator() =>
+      _coordinator.initialize(userId: widget.userId);
+
+  Future<void> _registerInstallation(DoseSyncCoordinator doseSync) async {
+    try {
+      await doseSync.registerInstallation(
+        installationId: await widget.installationId(),
+      );
+    } on Object {
+      // Registration is retried on a later foreground/background sync.
+    }
   }
 
   @override
@@ -103,7 +146,7 @@ class _AuthenticatedExperienceState extends State<AuthenticatedExperience>
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
-                    onPressed: _coordinator.initialize,
+                    onPressed: _initializeCoordinator,
                     child: const Text('Try again'),
                   ),
                 ],
