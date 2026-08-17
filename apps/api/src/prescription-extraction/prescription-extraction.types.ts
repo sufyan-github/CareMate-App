@@ -1,6 +1,7 @@
 export type PrescriptionMedicineDraft = {
   confidence: number;
   displayName: string;
+  evidenceSource: "OCR_TEXT" | "IMAGE_ONLY" | "OCR_AND_IMAGE";
   evidenceText: string;
   form: "TABLET" | "CAPSULE" | "SYRUP" | "INJECTION" | "DROPS" | "OTHER";
   instructionsText: string;
