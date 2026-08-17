@@ -261,10 +261,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilledButton, 'Confirm'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Snooze'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Snooze 10 min'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(TextButton, 'Skip'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Snooze'));
+    final snoozeButton = find.widgetWithText(OutlinedButton, 'Snooze 10 min');
+    await tester.ensureVisible(snoozeButton);
+    await tester.pumpAndSettle();
+    await tester.tap(snoozeButton);
     await tester.pumpAndSettle();
     expect(find.textContaining('Snoozed until'), findsOneWidget);
     expect(find.text('Pending sync'), findsNothing);
@@ -324,7 +330,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Snooze'));
+    final snoozeButton = find.widgetWithText(OutlinedButton, 'Snooze 10 min');
+    await tester.ensureVisible(snoozeButton);
+    await tester.pumpAndSettle();
+    await tester.tap(snoozeButton);
     await tester.pumpAndSettle();
 
     expect(find.text('Pending sync'), findsOneWidget);

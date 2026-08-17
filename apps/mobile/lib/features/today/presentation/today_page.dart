@@ -1,6 +1,9 @@
+import 'package:caremate/app/design/caremate_tokens.dart';
+import 'package:caremate/app/widgets/caremate_empty_state.dart';
+import 'package:caremate/app/widgets/caremate_status_card.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
-import 'package:flutter/material.dart';
 import 'package:caremate/features/reminders/domain/reminder_scheduler.dart';
+import 'package:flutter/material.dart';
 
 typedef DoseActionCallback =
     Future<bool> Function(
@@ -50,7 +53,7 @@ class TodayPage extends StatelessWidget {
         key: const PageStorageKey('today-page'),
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            padding: CareMateLayout.pagePadding,
             sliver: SliverList.list(
               children: [
                 Text(
@@ -226,51 +229,55 @@ class _DoseOccurrenceCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                _DoseStatusChip(occurrence: occurrence),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: CareMateSpacing.xs),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _DoseStatusChip(occurrence: occurrence),
+            ),
+            const SizedBox(height: CareMateSpacing.xs),
             Text(_statusMessage(occurrence)),
             if (canManage &&
                 onDoseAction != null &&
                 _canConfirm &&
                 _isDue &&
                 !occurrence.pendingSync) ...[
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      key: Key('confirm-dose-${occurrence.id}'),
-                      onPressed: () => _runAction(context, DoseAction.confirm),
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: Text(
-                        occurrence.status == 'MISSED'
-                            ? 'Confirm late'
-                            : 'Confirm',
-                      ),
-                    ),
-                  ),
-                  if (_canSnooze) ...[
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      key: Key('snooze-dose-${occurrence.id}'),
-                      onPressed: () => _runAction(
-                        context,
-                        DoseAction.snooze,
-                        snoozeMinutes: 10,
-                      ),
-                      child: const Text('Snooze'),
-                    ),
-                  ],
-                  if (_canSkip)
-                    TextButton(
-                      key: Key('skip-dose-${occurrence.id}'),
-                      onPressed: () => _confirmSkip(context),
-                      child: const Text('Skip'),
-                    ),
-                ],
+              const SizedBox(height: CareMateSpacing.md),
+              FilledButton.icon(
+                key: Key('confirm-dose-${occurrence.id}'),
+                onPressed: () => _runAction(context, DoseAction.confirm),
+                icon: const Icon(Icons.check_circle_outline),
+                label: Text(
+                  occurrence.status == 'MISSED' ? 'Confirm late' : 'Confirm',
+                ),
               ),
+              if (_canSnooze || _canSkip) ...[
+                const SizedBox(height: CareMateSpacing.xs),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: CareMateSpacing.xs,
+                  runSpacing: CareMateSpacing.xs,
+                  children: [
+                    if (_canSnooze)
+                      OutlinedButton(
+                        key: Key('snooze-dose-${occurrence.id}'),
+                        onPressed: () => _runAction(
+                          context,
+                          DoseAction.snooze,
+                          snoozeMinutes: 10,
+                        ),
+                        child: const Text('Snooze 10 min'),
+                      ),
+                    if (_canSkip)
+                      TextButton(
+                        key: Key('skip-dose-${occurrence.id}'),
+                        onPressed: () => _confirmSkip(context),
+                        child: const Text('Skip'),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ],
         ),
@@ -408,49 +415,26 @@ class _SyncStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pending = pendingCount > 0;
-    return Card(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(pending ? Icons.cloud_upload_outlined : Icons.cloud_off),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pending
-                        ? '$pendingCount saved change${pendingCount == 1 ? '' : 's'} waiting to sync'
-                        : usingOfflineCache
-                        ? 'Showing the saved plan on this phone'
-                        : 'Sync status',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message ??
-                        (pending
-                            ? 'CareMate will retry automatically when Android allows network work.'
-                            : 'You can continue using today’s saved plan while offline.'),
-                  ),
-                  if (onSyncNow != null) ...[
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      key: const Key('sync-now-button'),
-                      onPressed: onSyncNow,
-                      icon: const Icon(Icons.sync),
-                      label: const Text('Sync now'),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CareMateStatusCard(
+      actionKey: const Key('sync-now-button'),
+      actionLabel: onSyncNow == null ? null : 'Sync now',
+      icon: pending ? Icons.cloud_upload_outlined : Icons.cloud_off_outlined,
+      message:
+          message ??
+          (pending
+              ? 'CareMate will retry automatically when Android allows network work.'
+              : 'You can continue using today’s saved plan while offline.'),
+      onAction: onSyncNow == null
+          ? null
+          : () async {
+              await onSyncNow!();
+            },
+      title: pending
+          ? '$pendingCount saved change${pendingCount == 1 ? '' : 's'} waiting to sync'
+          : usingOfflineCache
+          ? 'Showing the saved plan on this phone'
+          : 'Sync status',
+      tone: pending ? CareMateStatusTone.warning : CareMateStatusTone.offline,
     );
   }
 }
@@ -463,53 +447,24 @@ class _ReadinessCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: colors.tertiaryContainer,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                Icons.notifications_active_outlined,
-                color: colors.onTertiaryContainer,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _title,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(_message),
-                  if (_showButton) ...[
-                    const SizedBox(height: 10),
-                    FilledButton(
-                      onPressed: onEnable,
-                      child: Text(
-                        readiness?.notificationsAllowed == true
-                            ? 'Improve timing'
-                            : 'Enable reminders',
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return CareMateStatusCard(
+      actionLabel: _showButton
+          ? readiness?.notificationsAllowed == true
+                ? 'Improve timing'
+                : 'Enable reminders'
+          : null,
+      icon: Icons.notifications_active_outlined,
+      message: _message,
+      onAction: !_showButton
+          ? null
+          : () async {
+              await onEnable!();
+            },
+      prominentAction: true,
+      title: _title,
+      tone: readiness?.ready == true
+          ? CareMateStatusTone.success
+          : CareMateStatusTone.info,
     );
   }
 
@@ -559,45 +514,15 @@ class _EmptyReminderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: colors.primaryContainer,
-              foregroundColor: colors.onPrimaryContainer,
-              child: const Icon(Icons.medication_outlined, size: 30),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              canManage ? 'No medicine reminders yet' : 'Shared care access',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              canManage
-                  ? 'Add a medicine manually or scan a prescription. You will review every detail before reminders start.'
-                  : 'You can view the confirmed medication plan. Only the patient can add or change medicines.',
-              textAlign: TextAlign.center,
-            ),
-            if (canManage) ...[
-              const SizedBox(height: 18),
-              FilledButton.icon(
-                onPressed: onAddMedicine,
-                icon: const Icon(Icons.add),
-                label: const Text('Add medicine'),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return CareMateEmptyState(
+      actionIcon: Icons.add,
+      actionLabel: canManage ? 'Add medicine' : null,
+      icon: Icons.medication_outlined,
+      message: canManage
+          ? 'Add a medicine manually or scan a prescription. You will review every detail before reminders start.'
+          : 'You can view the confirmed medication plan. Only the patient can add or change medicines.',
+      onAction: canManage ? onAddMedicine : null,
+      title: canManage ? 'No medicine reminders yet' : 'Shared care access',
     );
   }
 }
@@ -618,8 +543,12 @@ class _QuickAction extends StatelessWidget {
     return ActionChip(
       avatar: Icon(icon, size: 20),
       label: Text(label),
+      materialTapTargetSize: MaterialTapTargetSize.padded,
       onPressed: onPressed,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CareMateSpacing.xs,
+        vertical: CareMateSpacing.xs,
+      ),
     );
   }
 }
