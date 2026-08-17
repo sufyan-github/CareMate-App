@@ -1,7 +1,7 @@
 # CareMate competition-readiness roadmap
 
-**Status:** Active  
-**Date:** 17 August 2026  
+**Status:** Competition build completed; pilot gates remain
+**Date:** 18 August 2026
 **Owner:** CareMate product and engineering  
 **Assumption:** No named competition rubric was supplied. This roadmap optimizes for the criteria most physical product competitions judge: problem clarity, differentiation, usability, technical credibility, safety, impact, and a reliable live demonstration.
 
@@ -33,14 +33,14 @@ Release evidence must include passing automated checks, a reproducible physical-
 | Family care                    | Done               | Invitations, permissions, read-only shared plans, revocation                 | Needs judge-ready seeded two-person story                                                 |
 | Inventory and insight          | Done               | Immutable ledger, thresholds, run-out forecast, adherence indicator          | Needs clearer visual hierarchy and explanation                                            |
 | Localization and accessibility | Competition ready  | Live Bangla critical path, larger-text preference, semantics, 48 dp controls | Native-language and older-adult review remain required before a pilot                     |
-| Release operations             | In progress        | Safe diagnostics, provider controls, readiness endpoint, release checklist   | CI, competition package ID, and two physical rehearsals remain for Segment 5              |
+| Release operations             | Competition ready  | CI, provider controls, readiness, competition package ID, and two rehearsals | Production signing, provider credentials, and store distribution remain pilot gates       |
 | Commercial integrations        | Blocked externally | Provider-neutral specification                                               | bKash, bdapps and production SMS require approval; exclude from competition critical path |
 
 ## Now: committed competition build
 
 ### Segment 0 — Evidence-bound prescription name extraction
 
-**Status:** Completed  
+**Status:** Completed
 **Outcome:** OpenAI can recover a visibly supported medicine name when primary OCR misses it, while unsupported OCR claims fail closed.  
 **Evidence:** Versioned prompt, structured evidence source, warnings, and regression tests.
 
@@ -77,7 +77,7 @@ Release evidence must include passing automated checks, a reproducible physical-
 
 ### Segment 5 — Verification and competition package
 
-**Status:** Not started  
+**Status:** Completed
 **Outcome:** CI gates, release checklist, demo seed/reset workflow, physical-device rehearsal, screenshots, architecture one-pager, judge script, and backup video plan.  
 **Dependencies:** All earlier segments.  
 **Exit gate:** A clean checkout can build and verify; the physical demo passes twice consecutively.
@@ -114,7 +114,7 @@ Release evidence must include passing automated checks, a reproducible physical-
 | Risk                                       | Status             | Mitigation                                                                                                       |
 | ------------------------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | OpenAI and managed OCR secrets are absent  | Blocked            | Keep manual/on-device fallback; enable only through server-side secrets and kill switches                        |
-| Installed APK has a different signing key  | At risk            | Preserve data for now; use a competition application ID or approved uninstall during final device rehearsal      |
+| Installed APK has a different signing key  | Resolved           | Competition package `com.caremate.competition` installs independently and preserves `com.caremate.app`           |
 | Production OTP/SMS is not approved         | Blocked externally | Clearly label deterministic development OTP; never imply a real delivery integration                             |
 | Bangla medical copy could be mistranslated | At risk            | Translate the interface, not medical meaning; review critical copy with a qualified native reviewer before pilot |
 | Scope exceeds one-agent capacity           | Active             | Commit to Now outcomes, defer vendor- and research-gated work, and require an exit gate per segment              |
