@@ -1,11 +1,19 @@
 import 'package:caremate/features/more/presentation/devices_page.dart';
 import 'package:caremate/features/more/presentation/language_page.dart';
 import 'package:caremate/features/more/presentation/privacy_security_page.dart';
+import 'package:caremate/features/more/domain/account_settings_gateway.dart';
 import 'package:flutter/material.dart';
 
 class MorePage extends StatelessWidget {
-  const MorePage({required this.onLogout, super.key});
+  const MorePage({
+    required this.accessToken,
+    required this.gateway,
+    required this.onLogout,
+    super.key,
+  });
 
+  final String accessToken;
+  final AccountSettingsGateway gateway;
   final Future<void> Function() onLogout;
 
   @override
@@ -30,7 +38,12 @@ class MorePage extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute<void>(builder: (_) => const LanguagePage()),
+                  MaterialPageRoute<void>(
+                    builder: (_) => LanguagePage(
+                      accessToken: accessToken,
+                      gateway: gateway,
+                    ),
+                  ),
                 ),
               ),
               const Divider(height: 1),
@@ -42,7 +55,11 @@ class MorePage extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (_) => DevicesPage(onLogout: onLogout),
+                    builder: (_) => DevicesPage(
+                      accessToken: accessToken,
+                      gateway: gateway,
+                      onLogout: onLogout,
+                    ),
                   ),
                 ),
               ),
@@ -54,7 +71,11 @@ class MorePage extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (_) => const PrivacySecurityPage(),
+                    builder: (_) => PrivacySecurityPage(
+                      accessToken: accessToken,
+                      gateway: gateway,
+                      onLogout: onLogout,
+                    ),
                   ),
                 ),
               ),

@@ -5,6 +5,7 @@ import 'package:caremate/features/auth/domain/session_store.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_models.dart';
+import 'package:caremate/features/more/domain/account_settings_gateway.dart';
 
 AuthCoordinator authenticatedCoordinator() => AuthCoordinator(
   gateway: _RestorableAuthGateway(),
@@ -28,6 +29,87 @@ InMemoryPatientMedicationGateway existingPatientGateway() =>
 
 InMemoryCareAccessGateway emptyCareAccessGateway() =>
     InMemoryCareAccessGateway();
+
+InMemoryAccountSettingsGateway accountSettingsGateway() =>
+    InMemoryAccountSettingsGateway();
+
+class InMemoryAccountSettingsGateway implements AccountSettingsGateway {
+  AccountPreferences preferences = const AccountPreferences(
+    allowAnalytics: false,
+    locale: 'en-BD',
+    showMedicineOnLockScreen: false,
+  );
+  final List<DeviceSession> sessions = [
+    DeviceSession(
+      appVersion: '1.0.0',
+      current: true,
+      deviceName: 'This phone',
+      id: 'current-session',
+      lastSeenAt: DateTime(2026, 8, 17, 10, 30),
+      platform: 'ANDROID',
+      status: 'ACTIVE',
+    ),
+    DeviceSession(
+      appVersion: '1.0.0',
+      current: false,
+      deviceName: 'Other phone',
+      id: 'other-session',
+      lastSeenAt: DateTime(2026, 8, 16, 8),
+      platform: 'ANDROID',
+      status: 'ACTIVE',
+    ),
+  ];
+  bool deletionRequested = false;
+  bool loggedOutAll = false;
+
+  @override
+  Future<AccountPreferences> getPreferences(String accessToken) async =>
+      preferences;
+
+  @override
+  Future<AccountPreferences> updatePreferences({
+    required String accessToken,
+    bool? allowAnalytics,
+    String? locale,
+    bool? showMedicineOnLockScreen,
+  }) async {
+    return preferences = AccountPreferences(
+      allowAnalytics: allowAnalytics ?? preferences.allowAnalytics,
+      locale: locale ?? preferences.locale,
+      showMedicineOnLockScreen:
+          showMedicineOnLockScreen ?? preferences.showMedicineOnLockScreen,
+    );
+  }
+
+  @override
+  Future<List<DeviceSession>> listSessions(String accessToken) async =>
+      List.unmodifiable(sessions);
+
+  @override
+  Future<void> revokeSession({
+    required String accessToken,
+    required String sessionId,
+  }) async {
+    final index = sessions.indexWhere((session) => session.id == sessionId);
+    final current = sessions[index];
+    sessions[index] = DeviceSession(
+      appVersion: current.appVersion,
+      current: current.current,
+      deviceName: current.deviceName,
+      id: current.id,
+      lastSeenAt: current.lastSeenAt,
+      platform: current.platform,
+      status: 'REVOKED',
+    );
+  }
+
+  @override
+  Future<void> logoutAll(String accessToken) async => loggedOutAll = true;
+
+  @override
+  Future<void> requestAccountDeletion(String accessToken) async =>
+      deletionRequested = true;
+}
 
 class InMemoryCareAccessGateway implements CareAccessGateway {
   InMemoryCareAccessGateway({

@@ -8,6 +8,8 @@ import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/medications/data/http_patient_medication_gateway.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/medications/presentation/authenticated_experience.dart';
+import 'package:caremate/features/more/data/http_account_settings_gateway.dart';
+import 'package:caremate/features/more/domain/account_settings_gateway.dart';
 import 'package:caremate/features/prescription/data/mlkit_prescription_text_recognizer.dart';
 import 'package:caremate/features/prescription/data/http_prescription_extraction_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
@@ -16,6 +18,7 @@ import 'package:flutter/material.dart';
 
 class CareMateApp extends StatefulWidget {
   const CareMateApp({
+    this.accountSettingsGateway,
     this.authCoordinator,
     this.careAccessGateway,
     this.patientMedicationGateway,
@@ -24,6 +27,7 @@ class CareMateApp extends StatefulWidget {
     super.key,
   });
 
+  final AccountSettingsGateway? accountSettingsGateway;
   final AuthCoordinator? authCoordinator;
   final CareAccessGateway? careAccessGateway;
   final PatientMedicationGateway? patientMedicationGateway;
@@ -35,6 +39,7 @@ class CareMateApp extends StatefulWidget {
 }
 
 class _CareMateAppState extends State<CareMateApp> {
+  late final AccountSettingsGateway _accountSettingsGateway;
   late final AuthCoordinator _authCoordinator;
   late final CareAccessGateway _careAccessGateway;
   late final bool _ownsCoordinator;
@@ -45,6 +50,14 @@ class _CareMateAppState extends State<CareMateApp> {
   @override
   void initState() {
     super.initState();
+    _accountSettingsGateway =
+        widget.accountSettingsGateway ??
+        HttpAccountSettingsGateway(
+          baseUrl: const String.fromEnvironment(
+            'API_BASE_URL',
+            defaultValue: 'http://10.0.2.2:3000/api/v1',
+          ),
+        );
     _ownsCoordinator = widget.authCoordinator == null;
     _careAccessGateway =
         widget.careAccessGateway ??
@@ -105,6 +118,7 @@ class _CareMateAppState extends State<CareMateApp> {
         builder: (context, _) => switch (_authCoordinator.status) {
           AuthStatus.restoring => const _RestoringSessionPage(),
           AuthStatus.signedIn => AuthenticatedExperience(
+            accountSettingsGateway: _accountSettingsGateway,
             accessToken: _authCoordinator.session!.accessToken,
             careAccessGateway: _careAccessGateway,
             gateway: _patientMedicationGateway,

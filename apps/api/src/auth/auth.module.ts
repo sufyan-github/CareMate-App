@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 
 import { AccessSessionGuard } from "./access-session.guard.js";
+import { AccountController } from "./account.controller.js";
+import { AccountService } from "./account.service.js";
 import { AuthController } from "./auth.controller.js";
 import { AuthCryptoService } from "./auth-crypto.service.js";
 import { AuthService } from "./auth.service.js";
@@ -12,9 +14,10 @@ import {
 import { SessionController } from "./session.controller.js";
 
 @Module({
-  controllers: [AuthController, SessionController],
+  controllers: [AccountController, AuthController, SessionController],
   providers: [
     AccessSessionGuard,
+    AccountService,
     AuthCryptoService,
     AuthService,
     AuthTokenService,

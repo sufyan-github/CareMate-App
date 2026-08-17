@@ -5,6 +5,7 @@ import 'package:caremate/features/insights/presentation/insights_page.dart';
 import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
 import 'package:caremate/features/medications/presentation/medications_page.dart';
 import 'package:caremate/features/more/presentation/more_page.dart';
+import 'package:caremate/features/more/domain/account_settings_gateway.dart';
 import 'package:caremate/features/notifications/presentation/notifications_page.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
@@ -14,6 +15,7 @@ import 'package:flutter/material.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
+    required this.accountSettingsGateway,
     required this.careAccessGateway,
     required this.medicationCoordinator,
     required this.onLogout,
@@ -22,6 +24,7 @@ class AppShell extends StatefulWidget {
     super.key,
   });
 
+  final AccountSettingsGateway accountSettingsGateway;
   final CareAccessGateway careAccessGateway;
   final PatientMedicationCoordinator medicationCoordinator;
   final Future<void> Function() onLogout;
@@ -83,7 +86,11 @@ class _AppShellState extends State<AppShell> {
         patientDisplayName: widget.medicationCoordinator.profile!.displayName,
       ),
       InsightsPage(coordinator: widget.medicationCoordinator),
-      MorePage(onLogout: widget.onLogout),
+      MorePage(
+        accessToken: widget.medicationCoordinator.accessToken,
+        gateway: widget.accountSettingsGateway,
+        onLogout: widget.onLogout,
+      ),
     ];
 
     return Scaffold(

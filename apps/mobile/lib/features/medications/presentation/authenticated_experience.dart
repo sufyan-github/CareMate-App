@@ -2,6 +2,7 @@ import 'package:caremate/features/medications/application/patient_medication_coo
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
 import 'package:caremate/features/care/presentation/care_access_entry_page.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
+import 'package:caremate/features/more/domain/account_settings_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/shell/presentation/app_shell.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 
 class AuthenticatedExperience extends StatefulWidget {
   const AuthenticatedExperience({
+    required this.accountSettingsGateway,
     required this.accessToken,
     required this.careAccessGateway,
     required this.gateway,
@@ -18,6 +20,7 @@ class AuthenticatedExperience extends StatefulWidget {
     super.key,
   });
 
+  final AccountSettingsGateway accountSettingsGateway;
   final String accessToken;
   final CareAccessGateway careAccessGateway;
   final PatientMedicationGateway gateway;
@@ -62,6 +65,7 @@ class _AuthenticatedExperienceState extends State<AuthenticatedExperience> {
           gateway: widget.careAccessGateway,
         ),
         PatientMedicationStatus.ready => AppShell(
+          accountSettingsGateway: widget.accountSettingsGateway,
           careAccessGateway: widget.careAccessGateway,
           medicationCoordinator: _coordinator,
           onLogout: widget.onLogout,

@@ -15,20 +15,23 @@ model PlatformMetadata {
 }
 
 model User {
-  id                      String            @id
-  phoneE164Encrypted      String
-  phoneLookupHash         String            @unique
-  status                  String            @default("ACTIVE")
-  locale                  String            @default("bn-BD")
-  tokenVersion            Int               @default(0)
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-  deletedAt               DateTime?
-  sessions                AuthSession[]
-  patientProfiles         PatientProfile[]
-  careInvitationsSent     CareInvitation[]  @relation("CareInvitationInviter")
-  careInvitationsAccepted CareInvitation[]  @relation("CareInvitationAcceptor")
-  careAccessAuditEvents   CareAccessAudit[]
+  id                       String            @id
+  phoneE164Encrypted       String
+  phoneLookupHash          String            @unique
+  status                   String            @default("ACTIVE")
+  locale                   String            @default("bn-BD")
+  tokenVersion             Int               @default(0)
+  showMedicineOnLockScreen Boolean           @default(false)
+  allowAnalytics           Boolean           @default(false)
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  deletedAt                DateTime?
+  deletionRequestedAt      DateTime?
+  sessions                 AuthSession[]
+  patientProfiles          PatientProfile[]
+  careInvitationsSent      CareInvitation[]  @relation("CareInvitationInviter")
+  careInvitationsAccepted  CareInvitation[]  @relation("CareInvitationAcceptor")
+  careAccessAuditEvents    CareAccessAudit[]
 }
 
 model OtpChallenge {

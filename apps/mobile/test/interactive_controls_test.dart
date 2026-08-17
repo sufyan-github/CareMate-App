@@ -7,6 +7,7 @@ import 'support/auth_test_support.dart';
 Future<void> _pumpSignedInApp(WidgetTester tester) async {
   await tester.pumpWidget(
     CareMateApp(
+      accountSettingsGateway: accountSettingsGateway(),
       authCoordinator: authenticatedCoordinator(),
       careAccessGateway: emptyCareAccessGateway(),
       patientMedicationGateway: existingPatientGateway(),

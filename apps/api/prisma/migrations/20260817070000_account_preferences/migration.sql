@@ -1,0 +1,3 @@
+ALTER TABLE "User" ADD COLUMN "showMedicineOnLockScreen" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "allowAnalytics" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "deletionRequestedAt" DATETIME;
