@@ -11,6 +11,7 @@ import { InventoryModule } from "./inventory/inventory.module.js";
 import { MedicationScheduleModule } from "./medication-schedule/medication-schedule.module.js";
 import { PatientMedicationModule } from "./patient-medication/patient-medication.module.js";
 import { PrescriptionExtractionModule } from "./prescription-extraction/prescription-extraction.module.js";
+import { ReportingModule } from "./reporting/reporting.module.js";
 import { SyncModule } from "./sync/sync.module.js";
 
 @Module({
@@ -29,6 +30,7 @@ import { SyncModule } from "./sync/sync.module.js";
     MedicationScheduleModule,
     PatientMedicationModule,
     PrescriptionExtractionModule,
+    ReportingModule,
     SyncModule,
   ],
 })
