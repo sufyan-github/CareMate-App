@@ -27,6 +27,11 @@ CareMate is a Bangladesh-first medication-support and family-care platform speci
   historical occurrences and only replace eligible future Dose Occurrences
 - Versioned, idempotent Dose Occurrence commands for self-reported confirm,
   snooze, skip, automatic missed classification, and preserved late outcomes
+- Immutable medication inventory ledgers with unit-bound opening/restock/
+  correction entries, exactly-once confirmed-dose consumption, low-stock
+  thresholds, and schedule-based estimated run-out forecasts
+- Transparent 7/30-day app-based adherence indicators with explicit numerator,
+  denominator, timezone, outcome breakdown, exclusions, and non-clinical copy
 - Android local notifications with private lock-screen copy, confirm/snooze/
   skip actions, exact-alarm readiness, best-allowed inexact fallback, and a
   rolling 14-day reconciliation window
@@ -106,7 +111,7 @@ number and use OTP `123456`. Then verify these flows:
    the dose appears on Today and that pause, resume, edit, and end work.
 3. On Today, confirm a due occurrence. With another occurrence, verify a
    10-minute snooze and skip confirmation. Repeating an action must not create
-   a duplicate outcome.
+   a duplicate outcome or inventory consumption entry.
 4. Open Notifications, enable Android notification permission, and allow
    precise alarms when offered. If precise alarms remain unavailable, verify
    the page reports best-allowed timing and still lists the 14-day plan.
@@ -125,6 +130,10 @@ number and use OTP `123456`. Then verify these flows:
     Snooze, or Skip. Verify “Pending sync” appears and the action buttons are
     hidden. Reopen the app to prove the change survived, restore the API, then
     choose “Sync now” and verify the server state replaces the pending state.
+11. Open Insights, record an opening quantity or restock, and set a low-stock
+    threshold. Verify the estimated stock changes and a confirmed dose reduces
+    it once. Switch between 7 and 30 days and confirm the app-based indicator
+    explains its self-reported numerator, denominator, outcomes, and exclusions.
 
 The debug APK is written to
 `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk`.
