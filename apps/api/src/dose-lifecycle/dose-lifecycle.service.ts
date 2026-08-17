@@ -327,6 +327,21 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
             timingClassification,
           },
         });
+        const inventoryPosition =
+          await transaction.inventoryPosition.findUniqueOrThrow({
+            where: { medicationId: occurrence.medicationId },
+          });
+        await transaction.stockAdjustment.create({
+          data: {
+            actorUserId: userId,
+            delta: -occurrence.quantityValue,
+            id: ulid(),
+            idempotencyKey: `dose-confirmation:${occurrenceId}`,
+            inventoryPositionId: inventoryPosition.id,
+            occurrenceId,
+            reason: "CONFIRMED_CONSUMPTION",
+          },
+        });
         const result: DoseCommandResult = {
           confirmedAt: now.toISOString(),
           id: occurrenceId,

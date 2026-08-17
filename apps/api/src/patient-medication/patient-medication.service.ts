@@ -87,14 +87,25 @@ export class PatientMedicationService {
   ) {
     await this.ownedProfile(userId, profileId);
     const { instructions, ...medication } = input;
-    const created = await this.database.medication.create({
-      data: {
-        ...medication,
-        id: ulid(),
-        instructions: { create: { id: ulid(), ...instructions } },
-        patientProfileId: profileId,
-      },
-      include: { instructions: true },
+    const created = await this.database.$transaction(async (transaction) => {
+      const createdMedication = await transaction.medication.create({
+        data: {
+          ...medication,
+          id: ulid(),
+          instructions: { create: { id: ulid(), ...instructions } },
+          patientProfileId: profileId,
+        },
+        include: { instructions: true },
+      });
+      await transaction.inventoryPosition.create({
+        data: {
+          id: ulid(),
+          medicationId: createdMedication.id,
+          patientProfileId: profileId,
+          quantityUnit: instructions.quantityUnit,
+        },
+      });
+      return createdMedication;
     });
     return this.response(this.medicationView(created));
   }

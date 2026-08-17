@@ -3,6 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { randomUUID } from "node:crypto";
 import { unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { PrismaClient } from "../generated/prisma/client.js";
 
@@ -15,7 +17,10 @@ export class DatabaseService extends PrismaClient implements OnModuleDestroy {
       config.get<string>("TURSO_DATABASE_URL") ?? ":memory:";
     const ephemeralDatabasePath =
       configuredUrl === ":memory:"
-        ? `/tmp/caremate-${process.pid}-${randomUUID()}.db`
+        ? join(
+            tmpdir(),
+            `caremate-${process.pid}-${randomUUID()}.db`,
+          ).replaceAll("\\", "/")
         : undefined;
     const url =
       ephemeralDatabasePath === undefined

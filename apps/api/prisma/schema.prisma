@@ -33,6 +33,7 @@ model User {
   careInvitationsAccepted  CareInvitation[]     @relation("CareInvitationAcceptor")
   careAccessAuditEvents    CareAccessAudit[]
   deviceInstallations      DeviceInstallation[]
+  stockAdjustments         StockAdjustment[]
 }
 
 model DeviceInstallation {
@@ -113,19 +114,20 @@ model RefreshCredential {
 }
 
 model PatientProfile {
-  id              String           @id
-  ownerUserId     String           @unique
-  displayName     String
-  timezone        String
-  status          String           @default("ACTIVE")
-  version         Int              @default(1)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  owner           User             @relation(fields: [ownerUserId], references: [id])
-  medications     Medication[]
-  ocrDrafts       OcrDraft[]
-  careInvitations CareInvitation[]
-  doseOccurrences DoseOccurrence[]
+  id                 String              @id
+  ownerUserId        String              @unique
+  displayName        String
+  timezone           String
+  status             String              @default("ACTIVE")
+  version            Int                 @default(1)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  owner              User                @relation(fields: [ownerUserId], references: [id])
+  medications        Medication[]
+  ocrDrafts          OcrDraft[]
+  careInvitations    CareInvitation[]
+  doseOccurrences    DoseOccurrence[]
+  inventoryPositions InventoryPosition[]
 }
 
 model CareInvitation {
@@ -185,22 +187,23 @@ model OcrDraft {
 }
 
 model Medication {
-  id               String               @id
-  patientProfileId String
-  displayName      String
-  normalizedName   String?
-  strengthValue    Float?
-  strengthUnit     String?
-  form             String
-  notes            String?
-  status           String               @default("ACTIVE")
-  version          Int                  @default(1)
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  patientProfile   PatientProfile       @relation(fields: [patientProfileId], references: [id])
-  instructions     DoseInstruction?
-  schedules        MedicationSchedule[]
-  doseOccurrences  DoseOccurrence[]
+  id                String               @id
+  patientProfileId  String
+  displayName       String
+  normalizedName    String?
+  strengthValue     Float?
+  strengthUnit      String?
+  form              String
+  notes             String?
+  status            String               @default("ACTIVE")
+  version           Int                  @default(1)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  patientProfile    PatientProfile       @relation(fields: [patientProfileId], references: [id])
+  instructions      DoseInstruction?
+  schedules         MedicationSchedule[]
+  doseOccurrences   DoseOccurrence[]
+  inventoryPosition InventoryPosition?
 
   @@index([patientProfileId, status])
 }
@@ -267,6 +270,7 @@ model DoseOccurrence {
   patientProfile       PatientProfile     @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
   events               DoseEvent[]
   confirmation         DoseConfirmation?
+  stockAdjustment      StockAdjustment?
 
   @@unique([scheduleId, plannedLocalDateTime, ruleRevision])
   @@index([patientProfileId, plannedAt])
@@ -300,4 +304,37 @@ model DoseConfirmation {
   confirmedAt          DateTime
   clientAt             DateTime
   occurrence           DoseOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+}
+
+model InventoryPosition {
+  id                String            @id
+  patientProfileId  String
+  medicationId      String            @unique
+  quantityUnit      String
+  lowStockThreshold Float             @default(5)
+  version           Int               @default(1)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  patientProfile    PatientProfile    @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  medication        Medication        @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  adjustments       StockAdjustment[]
+
+  @@index([patientProfileId])
+}
+
+model StockAdjustment {
+  id                  String            @id
+  inventoryPositionId String
+  delta               Float
+  reason              String
+  occurrenceId        String?           @unique
+  actorUserId         String?
+  idempotencyKey      String            @unique
+  note                String?
+  createdAt           DateTime          @default(now())
+  inventoryPosition   InventoryPosition @relation(fields: [inventoryPositionId], references: [id], onDelete: Restrict)
+  occurrence          DoseOccurrence?   @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+  actor               User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([inventoryPositionId, createdAt])
 }

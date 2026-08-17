@@ -17,6 +17,14 @@ export class CarePermissionsDto {
   @IsOptional()
   @IsBoolean()
   canViewDoseOutcomes?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  canViewInventory?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  canManageInventory?: boolean;
 }
 
 export class CreateCareInvitationDto {
