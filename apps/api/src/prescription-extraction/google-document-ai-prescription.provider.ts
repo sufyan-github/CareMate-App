@@ -2,6 +2,8 @@ import { v1 as documentai } from "@google-cloud/documentai";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
+import { featureEnabled } from "../config/feature-flags.js";
+
 import {
   PrescriptionExtractionProvider,
   type PrescriptionExtractionInput,
@@ -33,6 +35,7 @@ export class GoogleDocumentAiPrescriptionProvider extends PrescriptionExtraction
       ?.trim()
       .toLowerCase();
     return (
+      featureEnabled(this.config, "PRESCRIPTION_CLOUD_OCR_ENABLED") &&
       Boolean(this.processorId && this.projectId) &&
       (provider === undefined || provider === "google-document-ai")
     );

@@ -4,6 +4,8 @@ import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
+import { featureEnabled } from "../config/feature-flags.js";
+
 import {
   PrescriptionExtractionProvider,
   type PrescriptionExtractionInput,
@@ -67,6 +69,7 @@ export class OpenAiPrescriptionExtractionProvider extends PrescriptionExtraction
       ?.trim()
       .toLowerCase();
     return (
+      featureEnabled(this.config, "PRESCRIPTION_AI_ENABLED") &&
       Boolean(this.apiKey) &&
       (extractor === undefined || extractor === "openai")
     );

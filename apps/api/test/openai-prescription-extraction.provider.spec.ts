@@ -100,5 +100,14 @@ describe("OpenAI prescription extraction provider", () => {
         }),
       ).isEnabled(),
     ).toBe(false);
+    expect(
+      new OpenAiPrescriptionExtractionProvider(
+        config({
+          OPENAI_API_KEY: "test-key",
+          PRESCRIPTION_AI_ENABLED: "false",
+          PRESCRIPTION_AI_EXTRACTOR: "openai",
+        }),
+      ).isEnabled(),
+    ).toBe(false);
   });
 });

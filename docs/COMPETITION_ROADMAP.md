@@ -33,7 +33,7 @@ Release evidence must include passing automated checks, a reproducible physical-
 | Family care                    | Done               | Invitations, permissions, read-only shared plans, revocation                 | Needs judge-ready seeded two-person story                                                 |
 | Inventory and insight          | Done               | Immutable ledger, thresholds, run-out forecast, adherence indicator          | Needs clearer visual hierarchy and explanation                                            |
 | Localization and accessibility | Competition ready  | Live Bangla critical path, larger-text preference, semantics, 48 dp controls | Native-language and older-adult review remain required before a pilot                     |
-| Release operations             | At risk            | Tests and physical-device verification notes                                 | No CI workflow, demo script, telemetry adapter, or release checklist                      |
+| Release operations             | In progress        | Safe diagnostics, provider controls, readiness endpoint, release checklist   | CI, competition package ID, and two physical rehearsals remain for Segment 5              |
 | Commercial integrations        | Blocked externally | Provider-neutral specification                                               | bKash, bdapps and production SMS require approval; exclude from competition critical path |
 
 ## Now: committed competition build
@@ -69,7 +69,8 @@ Release evidence must include passing automated checks, a reproducible physical-
 
 ### Segment 4 — Trust, reliability, and release hardening
 
-**Status:** Not started  
+**Status:** Completed
+
 **Outcome:** Privacy-safe diagnostics, provider readiness/kill switches, explicit development-mode labelling, performance checks, robust error taxonomy, and operational documentation.  
 **Dependencies:** Stable user journey from Segment 3.  
 **Exit gate:** No sensitive values enter logs; provider failure and offline recovery are demonstrated.
