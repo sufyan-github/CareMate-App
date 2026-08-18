@@ -15,25 +15,29 @@ model PlatformMetadata {
 }
 
 model User {
-  id                       String               @id
+  id                       String                @id
   phoneE164Encrypted       String
-  phoneLookupHash          String               @unique
-  status                   String               @default("ACTIVE")
-  locale                   String               @default("bn-BD")
-  tokenVersion             Int                  @default(0)
-  showMedicineOnLockScreen Boolean              @default(false)
-  allowAnalytics           Boolean              @default(false)
-  createdAt                DateTime             @default(now())
-  updatedAt                DateTime             @updatedAt
+  phoneLookupHash          String                @unique
+  status                   String                @default("ACTIVE")
+  locale                   String                @default("bn-BD")
+  tokenVersion             Int                   @default(0)
+  showMedicineOnLockScreen Boolean               @default(false)
+  allowAnalytics           Boolean               @default(false)
+  simpleMode               Boolean               @default(false)
+  voicePromptsEnabled      Boolean               @default(true)
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
   deletedAt                DateTime?
   deletionRequestedAt      DateTime?
   sessions                 AuthSession[]
   patientProfiles          PatientProfile[]
-  careInvitationsSent      CareInvitation[]     @relation("CareInvitationInviter")
-  careInvitationsAccepted  CareInvitation[]     @relation("CareInvitationAcceptor")
+  careInvitationsSent      CareInvitation[]      @relation("CareInvitationInviter")
+  careInvitationsAccepted  CareInvitation[]      @relation("CareInvitationAcceptor")
   careAccessAuditEvents    CareAccessAudit[]
   deviceInstallations      DeviceInstallation[]
   stockAdjustments         StockAdjustment[]
+  caregiverAlertsReceived  CaregiverAlert[]      @relation("CaregiverAlertRecipient")
+  caregiverAlertEvents     CaregiverAlertEvent[]
 }
 
 model DeviceInstallation {
@@ -114,20 +118,22 @@ model RefreshCredential {
 }
 
 model PatientProfile {
-  id                 String              @id
-  ownerUserId        String              @unique
-  displayName        String
-  timezone           String
-  status             String              @default("ACTIVE")
-  version            Int                 @default(1)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  owner              User                @relation(fields: [ownerUserId], references: [id])
-  medications        Medication[]
-  ocrDrafts          OcrDraft[]
-  careInvitations    CareInvitation[]
-  doseOccurrences    DoseOccurrence[]
-  inventoryPositions InventoryPosition[]
+  id                     String              @id
+  ownerUserId            String              @unique
+  displayName            String
+  timezone               String
+  status                 String              @default("ACTIVE")
+  version                Int                 @default(1)
+  missedDoseGraceMinutes Int                 @default(45)
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  owner                  User                @relation(fields: [ownerUserId], references: [id])
+  medications            Medication[]
+  ocrDrafts              OcrDraft[]
+  careInvitations        CareInvitation[]
+  doseOccurrences        DoseOccurrence[]
+  inventoryPositions     InventoryPosition[]
+  caregiverAlerts        CaregiverAlert[]
 }
 
 model CareInvitation {
@@ -150,6 +156,7 @@ model CareInvitation {
   inviter               User              @relation("CareInvitationInviter", fields: [inviterUserId], references: [id])
   acceptedBy            User?             @relation("CareInvitationAcceptor", fields: [acceptedByUserId], references: [id])
   auditEvents           CareAccessAudit[]
+  caregiverAlerts       CaregiverAlert[]
 
   @@index([patientProfileId, status])
   @@index([inviteePhoneHash, status, expiresAt])
@@ -271,10 +278,48 @@ model DoseOccurrence {
   events               DoseEvent[]
   confirmation         DoseConfirmation?
   stockAdjustment      StockAdjustment?
+  caregiverAlerts      CaregiverAlert[]
 
   @@unique([scheduleId, plannedLocalDateTime, ruleRevision])
   @@index([patientProfileId, plannedAt])
   @@index([scheduleId, status])
+}
+
+model CaregiverAlert {
+  id                  String                @id
+  patientProfileId    String
+  doseOccurrenceId    String
+  invitationId        String
+  caregiverUserId     String
+  status              String                @default("ACTIVE")
+  availableAt         DateTime
+  generatedAt         DateTime              @default(now())
+  deliveredAt         DateTime?
+  acknowledgedAt      DateTime?
+  resolvedAt          DateTime?
+  resolvedMinutesLate Int?
+  patientProfile      PatientProfile        @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
+  doseOccurrence      DoseOccurrence        @relation(fields: [doseOccurrenceId], references: [id], onDelete: Restrict)
+  invitation          CareInvitation        @relation(fields: [invitationId], references: [id], onDelete: Restrict)
+  caregiver           User                  @relation("CaregiverAlertRecipient", fields: [caregiverUserId], references: [id], onDelete: Restrict)
+  events              CaregiverAlertEvent[]
+
+  @@unique([doseOccurrenceId, invitationId])
+  @@index([caregiverUserId, availableAt, status])
+  @@index([patientProfileId, generatedAt])
+}
+
+model CaregiverAlertEvent {
+  id           String         @id
+  alertId      String
+  eventType    String
+  actorUserId  String?
+  metadataJson String         @default("{}")
+  createdAt    DateTime       @default(now())
+  alert        CaregiverAlert @relation(fields: [alertId], references: [id], onDelete: Restrict)
+  actor        User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([alertId, createdAt])
 }
 
 model DoseEvent {

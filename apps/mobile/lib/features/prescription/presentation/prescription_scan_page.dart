@@ -1,3 +1,6 @@
+import 'package:caremate/app/design/caremate_tokens.dart';
+import 'package:caremate/app/preferences/caremate_preferences.dart';
+import 'package:caremate/app/widgets/caremate_status_card.dart';
 import 'package:caremate/features/prescription/domain/prescription_extraction_gateway.dart';
 import 'package:caremate/features/prescription/domain/prescription_text_recognizer.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +33,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
   String? _error;
   String? _notice;
   List<String> _warnings = const [];
+  List<PrescriptionMedicineCandidate> _candidates = const [];
 
   @override
   void dispose() {
@@ -40,43 +44,41 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
 
   @override
   Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Prescription scan')),
+      appBar: AppBar(
+        title: Text(copy.pick('Prescription scan', 'প্রেসক্রিপশন স্ক্যান')),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.verified_user_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'OCR creates an unverified draft only. Check every field against the prescription before saving.',
-                      ),
-                    ),
-                  ],
-                ),
+            CareMateStatusCard(
+              icon: Icons.fact_check_outlined,
+              message: copy.pick(
+                'AI and OCR create an unverified draft only. Compare every field with the prescription before saving.',
+                'AI ও OCR শুধু একটি অযাচাইকৃত খসড়া তৈরি করে। সংরক্ষণের আগে প্রেসক্রিপশনের সঙ্গে প্রতিটি তথ্য মিলিয়ে নিন।',
               ),
+              title: copy.pick('Review required', 'যাচাই করা প্রয়োজন'),
+              tone: CareMateStatusTone.warning,
             ),
             const SizedBox(height: 18),
             if (!_isReviewing) ...[
               Text(
-                'Add a clear prescription image',
+                copy.pick(
+                  'Add a clear prescription image',
+                  'পরিষ্কার প্রেসক্রিপশনের ছবি দিন',
+                ),
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Use good lighting and keep the whole prescription inside the frame. On-device preview supports English printed text; configured cloud OCR can also process Bangla and handwriting.',
+              Text(
+                copy.pick(
+                  'Use good lighting and keep the whole prescription inside the frame. Cloud review can help with Bangla and handwriting.',
+                  'ভালো আলো ব্যবহার করুন এবং পুরো প্রেসক্রিপশন ফ্রেমে রাখুন। ক্লাউড যাচাই বাংলা ও হাতের লেখা বুঝতে সহায়তা করতে পারে।',
+                ),
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
@@ -84,7 +86,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
                     ? null
                     : () => _pickAndRecognize(ImageSource.camera),
                 icon: const Icon(Icons.camera_alt_outlined),
-                label: const Text('Take photo'),
+                label: Text(copy.pick('Take photo', 'ছবি তুলুন')),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -92,47 +94,101 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
                     ? null
                     : () => _pickAndRecognize(ImageSource.gallery),
                 icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Choose from gallery'),
+                label: Text(
+                  copy.pick('Choose from gallery', 'গ্যালারি থেকে নিন'),
+                ),
               ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: _isProcessing ? null : _startManualEntry,
-                child: const Text('Enter extracted text manually'),
+                child: Text(
+                  copy.pick(
+                    'Enter prescription text manually',
+                    'প্রেসক্রিপশনের লেখা নিজে লিখুন',
+                  ),
+                ),
               ),
               if (_isProcessing) ...[
                 const SizedBox(height: 20),
                 const Center(child: CircularProgressIndicator()),
                 const SizedBox(height: 8),
-                const Center(child: Text('Creating a review draft…')),
+                Center(
+                  child: Text(
+                    copy.pick(
+                      'Creating a review draft…',
+                      'যাচাইয়ের খসড়া তৈরি হচ্ছে…',
+                    ),
+                  ),
+                ),
               ],
             ] else ...[
               Text(
-                'Review OCR draft',
+                copy.pick('Review AI/OCR draft', 'AI/OCR খসড়া যাচাই করুন'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Correct the draft below. Nothing becomes a medication until you continue and save the medicine form.',
+              Text(
+                copy.pick(
+                  'Select the best supported name or correct it below. Nothing is saved until you review the medicine form.',
+                  'প্রমাণের সঙ্গে সবচেয়ে ভালো মেলা নাম বেছে নিন বা নিচে ঠিক করুন। ওষুধের ফর্ম যাচাই না করা পর্যন্ত কিছু সংরক্ষিত হবে না।',
+                ),
               ),
               if (_notice case final message?) ...[
                 const SizedBox(height: 12),
-                _StatusCard(icon: Icons.info_outline, message: message),
+                CareMateStatusCard(
+                  message: message,
+                  title: copy.pick('Draft status', 'খসড়ার অবস্থা'),
+                ),
               ],
               if (_warnings.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                _StatusCard(
+                CareMateStatusCard(
                   icon: Icons.warning_amber_rounded,
                   message: _warnings.join('\n'),
+                  title: copy.pick(
+                    'Check these details',
+                    'এই তথ্যগুলো যাচাই করুন',
+                  ),
+                  tone: CareMateStatusTone.warning,
                 ),
+              ],
+              if (_candidates.isNotEmpty) ...[
+                const SizedBox(height: CareMateSpacing.lg),
+                Text(
+                  copy.pick('Detected medicine names', 'শনাক্ত করা ওষুধের নাম'),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: CareMateSpacing.xs),
+                Text(
+                  copy.pick(
+                    'Confidence is a model estimate, not medical verification. Choose only a name you can see on the prescription.',
+                    'আত্মবিশ্বাসের মাত্রা মডেলের অনুমান, চিকিৎসাগত যাচাই নয়। প্রেসক্রিপশনে দেখা যায় এমন নামই বেছে নিন।',
+                  ),
+                ),
+                const SizedBox(height: CareMateSpacing.sm),
+                for (final candidate in _candidates)
+                  _CandidateCard(
+                    candidate: candidate,
+                    onSelect: () => setState(
+                      () => _medicineName.text = candidate.displayName,
+                    ),
+                    selected:
+                        _medicineName.text.trim() == candidate.displayName,
+                  ),
               ],
               const SizedBox(height: 20),
               TextField(
                 key: const Key('ocr-medicine-name-input'),
                 controller: _medicineName,
-                decoration: const InputDecoration(
-                  labelText: 'Medicine name from image',
+                decoration: InputDecoration(
+                  labelText: copy.pick(
+                    'Medicine name to verify',
+                    'যাচাই করার ওষুধের নাম',
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -141,16 +197,21 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
                 controller: _sourceText,
                 minLines: 5,
                 maxLines: 10,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   alignLabelWithHint: true,
-                  labelText: 'Extracted text',
+                  labelText: copy.pick('Extracted text', 'শনাক্ত করা লেখা'),
                 ),
               ),
               const SizedBox(height: 20),
               FilledButton(
                 key: const Key('review-ocr-draft-button'),
                 onPressed: _continueToMedicationReview,
-                child: const Text('Continue to medicine review'),
+                child: Text(
+                  copy.pick(
+                    'Review medicine details',
+                    'ওষুধের তথ্য যাচাই করুন',
+                  ),
+                ),
               ),
               TextButton(
                 onPressed: () => setState(() {
@@ -158,8 +219,11 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
                   _error = null;
                   _notice = null;
                   _warnings = const [];
+                  _candidates = const [];
                 }),
-                child: const Text('Choose another image'),
+                child: Text(
+                  copy.pick('Choose another image', 'অন্য ছবি বেছে নিন'),
+                ),
               ),
             ],
             if (_error case final message?) ...[
@@ -180,6 +244,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
       _error = null;
       _notice = null;
       _warnings = const [];
+      _candidates = const [];
       _isProcessing = true;
     });
     try {
@@ -234,6 +299,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
           ? suggestedName!
           : _firstUsefulLine(text);
       _warnings = cloudDraft?.warnings ?? const [];
+      _candidates = cloudDraft?.medicines ?? const [];
       if (cloudDraft != null) {
         _notice =
             'Cloud OCR draft created (${cloudDraft.language.toLowerCase()}). It has not changed your medication list.';
@@ -256,6 +322,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
       _error = null;
       _notice = 'Manual entry selected. Check the prescription carefully.';
       _warnings = const [];
+      _candidates = const [];
       _isReviewing = true;
     });
   }
@@ -282,23 +349,29 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
       .firstWhere((line) => line.length >= 2, orElse: () => '');
 
   Future<bool> _requestCloudConsent() async {
+    final copy = CareMateStrings.of(context);
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Use cloud OCR?'),
-        content: const Text(
-          'For better Bangla and handwriting recognition, this prescription image will be securely sent to the OCR providers configured by the CareMate server. It is used only to create a draft for your review.',
+        title: Text(
+          copy.pick('Use cloud AI/OCR?', 'ক্লাউড AI/OCR ব্যবহার করবেন?'),
+        ),
+        content: Text(
+          copy.pick(
+            'For better Bangla and handwriting recognition, this prescription image will be securely sent to providers configured by the CareMate server. It is used only to create a draft for your review.',
+            'বাংলা ও হাতের লেখা ভালোভাবে শনাক্ত করতে প্রেসক্রিপশনের ছবিটি CareMate সার্ভারে নির্ধারিত সেবায় নিরাপদে পাঠানো হবে। এটি শুধু আপনার যাচাইয়ের খসড়া তৈরিতে ব্যবহৃত হবে।',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('On-device only'),
+            child: Text(copy.pick('On-device only', 'শুধু এই ডিভাইসে')),
           ),
           FilledButton(
             key: const Key('allow-cloud-ocr-button'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Use cloud OCR'),
+            child: Text(copy.pick('Use cloud AI/OCR', 'ক্লাউড AI/OCR ব্যবহার')),
           ),
         ],
       ),
@@ -307,26 +380,46 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
   }
 }
 
-class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.icon, required this.message});
+class _CandidateCard extends StatelessWidget {
+  const _CandidateCard({
+    required this.candidate,
+    required this.onSelect,
+    required this.selected,
+  });
 
-  final IconData icon;
-  final String message;
+  final PrescriptionMedicineCandidate candidate;
+  final VoidCallback onSelect;
+  final bool selected;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20),
-        const SizedBox(width: 10),
-        Expanded(child: Text(message)),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final copy = CareMateStrings.of(context);
+    final confidenceLabel = switch (candidate.confidenceBand) {
+      PrescriptionConfidenceBand.high => copy.pick('High', 'উচ্চ'),
+      PrescriptionConfidenceBand.medium => copy.pick('Medium', 'মাঝারি'),
+      PrescriptionConfidenceBand.low => copy.pick('Low', 'কম'),
+    };
+    final percent = (candidate.confidence.clamp(0, 1) * 100).round();
+    return Card(
+      margin: const EdgeInsets.only(bottom: CareMateSpacing.xs),
+      child: RadioGroup<bool>(
+        groupValue: selected,
+        onChanged: (_) => onSelect(),
+        child: RadioListTile<bool>(
+          key: Key('ocr-candidate-${candidate.displayName}'),
+          value: true,
+          title: Text(
+            candidate.displayName,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          subtitle: Text(
+            copy.pick(
+              'OCR confidence: $confidenceLabel ($percent%)\nVisible evidence: ${candidate.evidenceText}',
+              'OCR আত্মবিশ্বাস: $confidenceLabel ($percent%)\nছবিতে দেখা প্রমাণ: ${candidate.evidenceText}',
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

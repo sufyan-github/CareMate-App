@@ -220,6 +220,9 @@ void main() {
     tester,
   ) async {
     final patientGateway = existingPatientGateway();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayText = today.toIso8601String().substring(0, 10);
     patientGateway.medications.add(
       const MedicationSummary(
         displayName: 'Napa',
@@ -234,16 +237,16 @@ void main() {
       occurrences: [
         ScheduleOccurrencePreview(
           plannedAt: DateTime.now().subtract(const Duration(minutes: 1)),
-          plannedLocalDateTime: '2026-08-17T08:00',
+          plannedLocalDateTime: '${todayText}T08:00',
         ),
       ],
       quantityRequired: 1,
       quantityUnit: 'TABLET',
       schedule: MedicationScheduleSummary(
-        endDate: DateTime(2026, 8, 17),
+        endDate: today,
         id: 'schedule-1',
         revision: 1,
-        startDate: DateTime(2026, 8, 17),
+        startDate: today,
         status: 'ACTIVE',
         times: const ['08:00'],
         timezone: 'Asia/Dhaka',
@@ -261,10 +264,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilledButton, 'Confirm'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Snooze'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Snooze 10 min'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(TextButton, 'Skip'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Snooze'));
+    final snoozeButton = find.widgetWithText(OutlinedButton, 'Snooze 10 min');
+    await tester.ensureVisible(snoozeButton);
+    await tester.pumpAndSettle();
+    await tester.tap(snoozeButton);
     await tester.pumpAndSettle();
     expect(find.textContaining('Snoozed until'), findsOneWidget);
     expect(find.text('Pending sync'), findsNothing);
@@ -285,6 +294,9 @@ void main() {
     tester,
   ) async {
     final patientGateway = existingPatientGateway();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayText = today.toIso8601String().substring(0, 10);
     patientGateway.medications.add(
       const MedicationSummary(
         displayName: 'Napa',
@@ -299,16 +311,16 @@ void main() {
       occurrences: [
         ScheduleOccurrencePreview(
           plannedAt: DateTime.now().subtract(const Duration(minutes: 1)),
-          plannedLocalDateTime: '2026-08-17T08:00',
+          plannedLocalDateTime: '${todayText}T08:00',
         ),
       ],
       quantityRequired: 1,
       quantityUnit: 'TABLET',
       schedule: MedicationScheduleSummary(
-        endDate: DateTime(2026, 8, 17),
+        endDate: today,
         id: 'schedule-1',
         revision: 1,
-        startDate: DateTime(2026, 8, 17),
+        startDate: today,
         status: 'ACTIVE',
         times: const ['08:00'],
         timezone: 'Asia/Dhaka',
@@ -324,7 +336,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Snooze'));
+    final snoozeButton = find.widgetWithText(OutlinedButton, 'Snooze 10 min');
+    await tester.ensureVisible(snoozeButton);
+    await tester.pumpAndSettle();
+    await tester.tap(snoozeButton);
     await tester.pumpAndSettle();
 
     expect(find.text('Pending sync'), findsOneWidget);

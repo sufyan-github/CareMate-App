@@ -45,3 +45,11 @@ export class DoseCommandDto {
   @Type(() => DoseCommandPayloadDto)
   payload?: DoseCommandPayloadDto;
 }
+
+export class SimulateMissDto {
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(240)
+  minutesLate: number = 46;
+}

@@ -2,16 +2,22 @@ class PatientProfile {
   const PatientProfile({
     this.accessRole = 'OWNER',
     this.canManage = true,
+    this.canReceiveMissedDoseAlerts = false,
+    this.canViewMedicationPlan = true,
     required this.displayName,
     required this.id,
+    this.missedDoseGraceMinutes = 45,
     required this.timezone,
     required this.version,
   });
 
   final String accessRole;
   final bool canManage;
+  final bool canReceiveMissedDoseAlerts;
+  final bool canViewMedicationPlan;
   final String displayName;
   final String id;
+  final int missedDoseGraceMinutes;
   final String timezone;
   final int version;
 }
@@ -45,6 +51,7 @@ class MedicationDraft {
 class MedicationSummary {
   const MedicationSummary({
     this.activeSchedule,
+    this.mealRelation = 'UNSPECIFIED',
     required this.displayName,
     required this.form,
     required this.id,
@@ -54,6 +61,7 @@ class MedicationSummary {
   });
 
   final MedicationScheduleSummary? activeSchedule;
+  final String mealRelation;
   final String displayName;
   final String form;
   final String id;

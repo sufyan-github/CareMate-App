@@ -175,8 +175,13 @@ void main() {
     'keeps the confirmed profile and medication plan for cold-start use',
     () async {
       const profile = PatientProfile(
+        accessRole: 'CAREGIVER',
+        canManage: false,
+        canReceiveMissedDoseAlerts: true,
+        canViewMedicationPlan: false,
         displayName: 'Abu Sufyan',
         id: 'profile-1',
+        missedDoseGraceMinutes: 30,
         timezone: 'Asia/Dhaka',
         version: 1,
       );
@@ -197,6 +202,7 @@ void main() {
           displayName: 'Napa',
           form: 'TABLET',
           id: 'medication-1',
+          mealRelation: 'AFTER',
           quantityLabel: '1 tablet',
           status: 'ACTIVE',
           strengthLabel: '500 mg',
@@ -204,10 +210,23 @@ void main() {
       ]);
 
       expect(await store.listCachedProfiles(), [
-        isA<PatientProfile>().having((item) => item.id, 'id', profile.id),
+        isA<PatientProfile>()
+            .having((item) => item.id, 'id', profile.id)
+            .having(
+              (item) => item.canReceiveMissedDoseAlerts,
+              'alert permission',
+              isTrue,
+            )
+            .having(
+              (item) => item.canViewMedicationPlan,
+              'plan permission',
+              isFalse,
+            )
+            .having((item) => item.missedDoseGraceMinutes, 'grace minutes', 30),
       ]);
       final medications = await store.listCachedMedications(profile.id);
       expect(medications.single.displayName, 'Napa');
+      expect(medications.single.mealRelation, 'AFTER');
       expect(medications.single.activeSchedule?.revision, 2);
       expect(medications.single.activeSchedule?.times, ['08:00']);
     },

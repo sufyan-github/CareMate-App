@@ -1,3 +1,4 @@
+import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:caremate/features/more/domain/account_settings_gateway.dart';
 import 'package:flutter/material.dart';
 
@@ -28,8 +29,12 @@ class _LanguagePageState extends State<LanguagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final appPreferences = CareMatePreferencesScope.of(context);
+    final copy = CareMateStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose language')),
+      appBar: AppBar(
+        title: Text(copy.pick('Language and display', 'ভাষা ও প্রদর্শন')),
+      ),
       body: SafeArea(
         child: _locale == null && _error == null
             ? const Center(child: CircularProgressIndicator())
@@ -46,7 +51,7 @@ class _LanguagePageState extends State<LanguagePage> {
                     const SizedBox(height: 8),
                     OutlinedButton(
                       onPressed: _load,
-                      child: const Text('Try again'),
+                      child: Text(copy.pick('Try again', 'আবার চেষ্টা করুন')),
                     ),
                   ],
                   if (_locale != null)
@@ -70,11 +75,27 @@ class _LanguagePageState extends State<LanguagePage> {
                     ),
                   if (_saving) const LinearProgressIndicator(),
                   const SizedBox(height: 16),
-                  const Card(
+                  SwitchListTile(
+                    key: const Key('large-text-setting'),
+                    value: appPreferences.largeText,
+                    onChanged: appPreferences.setLargeText,
+                    title: Text(copy.pick('Larger text', 'বড় লেখা')),
+                    subtitle: Text(
+                      copy.pick(
+                        'Makes important CareMate text easier to read.',
+                        'CareMate-এর গুরুত্বপূর্ণ লেখা সহজে পড়তে সাহায্য করে।',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
                     child: Padding(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       child: Text(
-                        'Your choice is saved to your CareMate account and follows you across devices. Bangla translation is being completed screen by screen; reviewed English remains visible where Bangla copy is not yet available.',
+                        copy.pick(
+                          'Your language is saved to your CareMate account. Larger text is saved securely on this phone.',
+                          'আপনার ভাষা CareMate অ্যাকাউন্টে সংরক্ষিত থাকে। বড় লেখার পছন্দটি এই ফোনে নিরাপদে সংরক্ষিত থাকে।',
+                        ),
                       ),
                     ),
                   ),
@@ -90,7 +111,9 @@ class _LanguagePageState extends State<LanguagePage> {
       final preferences = await widget.gateway.getPreferences(
         widget.accessToken,
       );
-      if (mounted) setState(() => _locale = preferences.locale);
+      if (!mounted) return;
+      setState(() => _locale = preferences.locale);
+      await CareMatePreferencesScope.of(context).setLocale(preferences.locale);
     } on AccountSettingsFailure catch (failure) {
       if (mounted) setState(() => _error = failure.message);
     }
@@ -111,6 +134,8 @@ class _LanguagePageState extends State<LanguagePage> {
       );
       if (!mounted) return;
       setState(() => _locale = preferences.locale);
+      await CareMatePreferencesScope.of(context).setLocale(preferences.locale);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

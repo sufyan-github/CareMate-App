@@ -73,15 +73,36 @@ export class PrescriptionExtractionService {
           localOcrText: primary.rawText,
         });
         const normalizedEvidence = this.normalizeEvidence(primary.rawText);
-        const medicines = structured.medicines.filter((medicine) => {
+        let imageEvidenceCount = 0;
+        let rejectedCandidateCount = 0;
+        const medicines = structured.medicines.flatMap((medicine) => {
           const evidence = this.normalizeEvidence(medicine.evidenceText);
-          return Boolean(evidence) && normalizedEvidence.includes(evidence);
+          if (!evidence || !medicine.displayName.trim()) {
+            rejectedCandidateCount += 1;
+            return [];
+          }
+          const matchesOcr = normalizedEvidence.includes(evidence);
+          if (medicine.evidenceSource === "OCR_TEXT" && !matchesOcr) {
+            rejectedCandidateCount += 1;
+            return [];
+          }
+          if (medicine.evidenceSource === "IMAGE_ONLY" || !matchesOcr) {
+            imageEvidenceCount += 1;
+            return [{ ...medicine, evidenceSource: "IMAGE_ONLY" as const }];
+          }
+          return [medicine];
         });
         const rejectedCandidateWarning =
-          medicines.length === structured.medicines.length
+          rejectedCandidateCount === 0
             ? []
             : [
                 "One or more AI candidates were removed because their evidence was absent from the primary OCR text.",
+              ];
+        const imageEvidenceWarning =
+          imageEvidenceCount === 0
+            ? []
+            : [
+                "One or more medicine names were read from the prescription image because primary OCR did not contain matching text. Verify the spelling carefully.",
               ];
         extracted = {
           ...structured,
@@ -95,6 +116,7 @@ export class PrescriptionExtractionService {
             ...primary.warnings,
             ...structured.warnings,
             ...rejectedCandidateWarning,
+            ...imageEvidenceWarning,
           ],
         };
       } catch {
@@ -165,6 +187,10 @@ export class PrescriptionExtractionService {
   }
 
   private normalizeEvidence(value: string): string {
-    return value.toLocaleLowerCase("en-US").replace(/\s+/gu, " ").trim();
+    return value
+      .normalize("NFKC")
+      .toLocaleLowerCase("en-US")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
   }
 }

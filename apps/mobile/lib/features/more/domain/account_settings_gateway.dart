@@ -3,11 +3,15 @@ class AccountPreferences {
     required this.allowAnalytics,
     required this.locale,
     required this.showMedicineOnLockScreen,
+    required this.simpleMode,
+    required this.voicePromptsEnabled,
   });
 
   final bool allowAnalytics;
   final String locale;
   final bool showMedicineOnLockScreen;
+  final bool simpleMode;
+  final bool voicePromptsEnabled;
 
   factory AccountPreferences.fromJson(Map<String, dynamic> json) =>
       AccountPreferences(
@@ -15,6 +19,8 @@ class AccountPreferences {
         locale: json['locale'] as String? ?? 'en-BD',
         showMedicineOnLockScreen:
             json['showMedicineOnLockScreen'] as bool? ?? false,
+        simpleMode: json['simpleMode'] as bool? ?? false,
+        voicePromptsEnabled: json['voicePromptsEnabled'] as bool? ?? true,
       );
 }
 
@@ -62,6 +68,8 @@ abstract class AccountSettingsGateway {
     bool? allowAnalytics,
     String? locale,
     bool? showMedicineOnLockScreen,
+    bool? simpleMode,
+    bool? voicePromptsEnabled,
   });
 
   Future<List<DeviceSession>> listSessions(String accessToken);

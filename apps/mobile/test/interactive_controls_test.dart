@@ -67,7 +67,7 @@ void main() {
 
     await _showTodayQuickActions(tester);
     await _tapVisible(tester, find.text('Scan prescription'));
-    await tester.tap(find.text('Enter extracted text manually'));
+    await tester.tap(find.text('Enter prescription text manually'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('ocr-medicine-name-input')),
@@ -116,6 +116,12 @@ void main() {
       tester,
       find.byKey(const Key('send-caregiver-invitation-button')),
     );
+    expect(careGateway.invitations, isEmpty);
+    expect(find.text('Create this invitation?'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const Key('confirm-caregiver-invitation-button')),
+    );
+    await tester.pumpAndSettle();
 
     expect(careGateway.invitations, hasLength(1));
     expect(find.textContaining('Invitation created'), findsOneWidget);
@@ -212,7 +218,7 @@ void main() {
 
     await tester.tap(find.text('Language'));
     await tester.pumpAndSettle();
-    expect(find.text('Choose language'), findsOneWidget);
+    expect(find.text('Language and display'), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -225,5 +231,28 @@ void main() {
     await tester.tap(find.text('Privacy and security'));
     await tester.pumpAndSettle();
     expect(find.text('Your privacy controls'), findsOneWidget);
+  });
+
+  testWidgets('Simple Mode is reachable in two taps and persists to account', (
+    tester,
+  ) async {
+    final accountGateway = accountSettingsGateway();
+    await tester.pumpWidget(
+      CareMateApp(
+        accountSettingsGateway: accountGateway,
+        authCoordinator: authenticatedCoordinator(),
+        patientMedicationGateway: existingPatientGateway(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('simple-mode-setting')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simple Mode'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(accountGateway.preferences.simpleMode, isTrue);
   });
 }

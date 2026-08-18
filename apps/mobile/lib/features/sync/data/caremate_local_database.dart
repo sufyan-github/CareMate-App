@@ -18,6 +18,12 @@ class CachedPatientProfiles extends Table {
   IntColumn get version => integer()();
   TextColumn get accessRole => text()();
   BoolColumn get canManage => boolean()();
+  BoolColumn get canReceiveMissedDoseAlerts =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get canViewMedicationPlan =>
+      boolean().withDefault(const Constant(true))();
+  IntColumn get missedDoseGraceMinutes =>
+      integer().withDefault(const Constant(45))();
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
@@ -29,6 +35,8 @@ class CachedMedications extends Table {
   TextColumn get profileId => text()();
   TextColumn get displayName => text()();
   TextColumn get form => text()();
+  TextColumn get mealRelation =>
+      text().withDefault(const Constant('UNSPECIFIED'))();
   TextColumn get quantityLabel => text()();
   TextColumn get status => text()();
   TextColumn get strengthLabel => text().nullable()();
@@ -99,5 +107,31 @@ class CareMateLocalDatabase extends _$CareMateLocalDatabase {
   CareMateLocalDatabase(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.addColumn(
+          cachedMedications,
+          cachedMedications.mealRelation,
+        );
+      }
+      if (from < 3) {
+        await migrator.addColumn(
+          cachedPatientProfiles,
+          cachedPatientProfiles.canReceiveMissedDoseAlerts,
+        );
+        await migrator.addColumn(
+          cachedPatientProfiles,
+          cachedPatientProfiles.canViewMedicationPlan,
+        );
+        await migrator.addColumn(
+          cachedPatientProfiles,
+          cachedPatientProfiles.missedDoseGraceMinutes,
+        );
+      }
+    },
+  );
 }

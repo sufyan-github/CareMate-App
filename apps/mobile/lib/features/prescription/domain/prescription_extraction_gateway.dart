@@ -9,6 +9,12 @@ class PrescriptionMedicineCandidate {
   final String evidenceText;
   final double confidence;
 
+  PrescriptionConfidenceBand get confidenceBand => switch (confidence) {
+    >= 0.85 => PrescriptionConfidenceBand.high,
+    >= 0.60 => PrescriptionConfidenceBand.medium,
+    _ => PrescriptionConfidenceBand.low,
+  };
+
   factory PrescriptionMedicineCandidate.fromJson(Map<String, dynamic> json) =>
       PrescriptionMedicineCandidate(
         displayName: json['displayName'] as String? ?? '',
@@ -16,6 +22,8 @@ class PrescriptionMedicineCandidate {
         confidence: (json['confidence'] as num?)?.toDouble() ?? 0,
       );
 }
+
+enum PrescriptionConfidenceBand { high, medium, low }
 
 class PrescriptionExtractionDraft {
   const PrescriptionExtractionDraft({

@@ -39,6 +39,7 @@ export class DevelopmentPrescriptionExtractionProvider extends PrescriptionExtra
         {
           confidence: 0.5,
           displayName,
+          evidenceSource: "OCR_TEXT",
           evidenceText: rawText,
           form: "OTHER",
           instructionsText: rawText,

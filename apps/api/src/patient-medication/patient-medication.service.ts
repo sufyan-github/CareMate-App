@@ -43,7 +43,9 @@ export class PatientMedicationService {
       where: { acceptedByUserId: userId, status: "ACCEPTED" },
     });
     const sharedProfiles = sharedInvitations
-      .filter((invitation) => this.canViewPlan(invitation.permissionsJson))
+      .filter((invitation) =>
+        this.canAccessSharedProfile(invitation.permissionsJson),
+      )
       .map((invitation) =>
         this.profileView(
           invitation.patientProfile,
@@ -58,7 +60,7 @@ export class PatientMedicationService {
   }
 
   async getProfile(userId: string, profileId: string) {
-    const access = await this.readableProfile(userId, profileId);
+    const access = await this.readableProfile(userId, profileId, false);
     return this.response(
       this.profileView(access.profile, access.role, access.permissions),
     );
@@ -183,7 +185,11 @@ export class PatientMedicationService {
       .then((medication) => medication ?? this.notFound());
   }
 
-  private async readableProfile(userId: string, profileId: string) {
+  private async readableProfile(
+    userId: string,
+    profileId: string,
+    requireMedicationPlan = true,
+  ) {
     const profile = await this.database.patientProfile.findUnique({
       where: { id: profileId },
     });
@@ -202,7 +208,12 @@ export class PatientMedicationService {
         status: "ACCEPTED",
       },
     });
-    if (!invitation || !this.canViewPlan(invitation.permissionsJson)) {
+    if (
+      !invitation ||
+      (requireMedicationPlan
+        ? !this.canViewPlan(invitation.permissionsJson)
+        : !this.canAccessSharedProfile(invitation.permissionsJson))
+    ) {
       this.notFound();
     }
     return {
@@ -237,6 +248,7 @@ export class PatientMedicationService {
       createdAt: Date;
       displayName: string;
       id: string;
+      missedDoseGraceMinutes: number;
       status: string;
       timezone: string;
       updatedAt: Date;
@@ -251,6 +263,7 @@ export class PatientMedicationService {
       createdAt: profile.createdAt.toISOString(),
       displayName: profile.displayName,
       id: profile.id,
+      missedDoseGraceMinutes: profile.missedDoseGraceMinutes,
       permissions,
       status: profile.status,
       timezone: profile.timezone,
@@ -266,6 +279,21 @@ export class PatientMedicationService {
         unknown
       >;
       return permissions.canViewMedicationPlan === true;
+    } catch {
+      return false;
+    }
+  }
+
+  private canAccessSharedProfile(permissionsJson: string): boolean {
+    try {
+      const permissions = JSON.parse(permissionsJson) as Record<
+        string,
+        unknown
+      >;
+      return (
+        permissions.canViewMedicationPlan === true ||
+        permissions.canReceiveMissedDoseAlerts === true
+      );
     } catch {
       return false;
     }

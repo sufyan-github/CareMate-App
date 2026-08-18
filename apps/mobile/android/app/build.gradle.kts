@@ -5,6 +5,9 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val careMateApplicationId =
+    System.getenv("CAREMATE_ANDROID_APPLICATION_ID") ?: "com.caremate.competition"
+
 android {
     namespace = "com.caremate.app"
     compileSdk = flutter.compileSdkVersion
@@ -21,13 +24,27 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.caremate.app"
+        applicationId = careMateApplicationId
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        versionNameSuffix = if (careMateApplicationId == "com.caremate.competition") {
+            "-competition"
+        } else {
+            null
+        }
+        resValue(
+            "string",
+            "app_name",
+            if (careMateApplicationId == "com.caremate.competition") {
+                "CareMate Competition"
+            } else {
+                "CareMate"
+            },
+        )
     }
 
     buildTypes {

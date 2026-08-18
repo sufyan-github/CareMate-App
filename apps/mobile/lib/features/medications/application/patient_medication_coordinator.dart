@@ -66,10 +66,18 @@ class PatientMedicationCoordinator extends ChangeNotifier {
         status = PatientMedicationStatus.needsProfile;
       } else {
         profile = profiles.first;
-        await _loadMedications();
+        if (profile!.canViewMedicationPlan) {
+          await _loadMedications();
+        } else {
+          medications = const [];
+          doseOccurrences = const [];
+          reminderOccurrences = const [];
+        }
         status = PatientMedicationStatus.ready;
         notifyListeners();
-        unawaited(_initializeReminders());
+        if (profile!.canViewMedicationPlan) {
+          unawaited(_initializeReminders());
+        }
       }
     } on AuthFailure catch (failure) {
       errorMessage = failure.message;
@@ -274,6 +282,7 @@ class PatientMedicationCoordinator extends ChangeNotifier {
 
   Future<void> refreshAfterAppResume() async {
     if (status != PatientMedicationStatus.ready || _disposed) return;
+    if (profile?.canViewMedicationPlan != true) return;
     try {
       try {
         await doseSync.syncNow();

@@ -143,6 +143,8 @@ class InMemoryAccountSettingsGateway implements AccountSettingsGateway {
     allowAnalytics: false,
     locale: 'en-BD',
     showMedicineOnLockScreen: false,
+    simpleMode: false,
+    voicePromptsEnabled: true,
   );
   final List<DeviceSession> sessions = [
     DeviceSession(
@@ -177,12 +179,17 @@ class InMemoryAccountSettingsGateway implements AccountSettingsGateway {
     bool? allowAnalytics,
     String? locale,
     bool? showMedicineOnLockScreen,
+    bool? simpleMode,
+    bool? voicePromptsEnabled,
   }) async {
     return preferences = AccountPreferences(
       allowAnalytics: allowAnalytics ?? preferences.allowAnalytics,
       locale: locale ?? preferences.locale,
       showMedicineOnLockScreen:
           showMedicineOnLockScreen ?? preferences.showMedicineOnLockScreen,
+      simpleMode: simpleMode ?? preferences.simpleMode,
+      voicePromptsEnabled:
+          voicePromptsEnabled ?? preferences.voicePromptsEnabled,
     );
   }
 
@@ -226,6 +233,10 @@ class InMemoryCareAccessGateway implements CareAccessGateway {
 
   final void Function()? onAccepted;
   final List<CareInvitation> invitations = [];
+  final List<CaregiverAlert> alerts = [];
+  int profileVersion = 1;
+  int missedDoseGraceMinutes = 45;
+  bool simulatedMiss = false;
 
   @override
   Future<CareInvitation> createInvitation({
@@ -294,6 +305,52 @@ class InMemoryCareAccessGateway implements CareAccessGateway {
     required String accessToken,
     required String invitationId,
   }) async => _withStatus(invitationId, 'DECLINED');
+
+  @override
+  Future<List<CaregiverAlert>> listAlerts({
+    required String accessToken,
+    required String profileId,
+  }) async => List.unmodifiable(alerts);
+
+  @override
+  Future<void> acknowledgeAlert({
+    required String accessToken,
+    required String alertId,
+  }) async {
+    final index = alerts.indexWhere((alert) => alert.id == alertId);
+    final current = alerts[index];
+    alerts[index] = CaregiverAlert(
+      acknowledgedAt: DateTime.now(),
+      callPhoneE164: current.callPhoneE164,
+      deliveredAt: current.deliveredAt,
+      generatedAt: current.generatedAt,
+      id: current.id,
+      medicationName: current.medicationName,
+      patientDisplayName: current.patientDisplayName,
+      plannedAt: current.plannedAt,
+      resolvedAt: current.resolvedAt,
+      resolvedMinutesLate: current.resolvedMinutesLate,
+      status: 'ACKNOWLEDGED',
+    );
+  }
+
+  @override
+  Future<int> updateMissedDoseGrace({
+    required String accessToken,
+    required int expectedVersion,
+    required int minutes,
+    required String profileId,
+  }) async {
+    missedDoseGraceMinutes = minutes;
+    return profileVersion += 1;
+  }
+
+  @override
+  Future<void> simulateMiss({
+    required String accessToken,
+    required int minutesLate,
+    required String profileId,
+  }) async => simulatedMiss = true;
 
   CareInvitation _withStatus(String invitationId, String status) {
     final index = invitations.indexWhere((item) => item.id == invitationId);

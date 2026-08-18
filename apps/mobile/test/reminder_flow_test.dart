@@ -11,6 +11,9 @@ void main() {
     tester,
   ) async {
     final gateway = existingPatientGateway();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayText = today.toIso8601String().substring(0, 10);
     gateway.medications.add(
       const MedicationSummary(
         displayName: 'Napa',
@@ -25,16 +28,16 @@ void main() {
       occurrences: [
         ScheduleOccurrencePreview(
           plannedAt: DateTime.now().add(const Duration(hours: 1)),
-          plannedLocalDateTime: '2026-08-17T12:00',
+          plannedLocalDateTime: '${todayText}T12:00',
         ),
       ],
       quantityRequired: 1,
       quantityUnit: 'TABLET',
       schedule: MedicationScheduleSummary(
-        endDate: DateTime(2026, 8, 17),
+        endDate: today,
         id: 'schedule-1',
         revision: 1,
-        startDate: DateTime(2026, 8, 17),
+        startDate: today,
         status: 'ACTIVE',
         times: const ['12:00'],
         timezone: 'Asia/Dhaka',

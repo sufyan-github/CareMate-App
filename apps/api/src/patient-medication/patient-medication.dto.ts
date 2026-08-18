@@ -7,7 +7,9 @@ import {
   IsPositive,
   IsString,
   Length,
+  Max,
   MaxLength,
+  Min,
   ValidateNested,
 } from "class-validator";
 
@@ -46,6 +48,12 @@ export class UpdatePatientProfileDto {
   @IsString()
   @Length(1, 80)
   timezone?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(240)
+  missedDoseGraceMinutes?: number;
 }
 
 export class DoseInstructionDto {

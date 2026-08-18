@@ -77,7 +77,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Check your messages'), findsOneWidget);
-    expect(find.text('Development mode: use code 123456'), findsOneWidget);
+    expect(find.text('Demo sign-in'), findsOneWidget);
+    expect(
+      find.text(
+        'No SMS was sent. Use code 123456 only for this development build.',
+      ),
+      findsOneWidget,
+    );
 
     await tester.enterText(find.byKey(const Key('otp-input')), '123456');
     await tester.tap(find.text('Verify and continue'));
@@ -88,6 +94,8 @@ void main() {
     expect(store.refreshToken, 'refresh-2');
 
     await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Sign out of this device'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out of this device'));
     await tester.pumpAndSettle();

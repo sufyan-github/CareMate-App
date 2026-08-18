@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:caremate/app/theme/caremate_theme.dart';
 import 'package:caremate/features/auth/application/auth_coordinator.dart';
 import 'package:caremate/features/auth/data/http_auth_gateway.dart';
@@ -5,7 +8,9 @@ import 'package:caremate/features/auth/data/file_refresh_session_lock.dart';
 import 'package:caremate/features/auth/data/secure_session_store.dart';
 import 'package:caremate/features/auth/presentation/auth_flow_page.dart';
 import 'package:caremate/features/care/data/http_care_access_gateway.dart';
+import 'package:caremate/features/care/data/flutter_caregiver_alert_notifier.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
+import 'package:caremate/features/care/domain/caregiver_alert_notifier.dart';
 import 'package:caremate/features/insights/data/http_insights_gateway.dart';
 import 'package:caremate/features/insights/domain/insights_gateway.dart';
 import 'package:caremate/features/medications/data/http_patient_medication_gateway.dart';
@@ -27,6 +32,8 @@ import 'package:caremate/features/sync/data/workmanager_sync_scheduler.dart';
 import 'package:caremate/features/sync/domain/background_sync_scheduler.dart';
 import 'package:caremate/features/sync/domain/dose_sync_gateway.dart';
 import 'package:caremate/features/sync/domain/dose_sync_models.dart';
+import 'package:caremate/features/simple_mode/data/flutter_tts_dose_announcement_service.dart';
+import 'package:caremate/features/simple_mode/domain/dose_announcement_service.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 
@@ -36,13 +43,20 @@ class CareMateApp extends StatefulWidget {
     this.authCoordinator,
     this.backgroundSyncScheduler,
     this.careAccessGateway,
+    this.caregiverAlertNotifier,
     this.patientMedicationGateway,
     this.insightsGateway,
     this.doseMutationStore,
     this.doseSyncGateway,
     this.prescriptionExtractionGateway,
     this.prescriptionTextRecognizer,
+    this.preferencesController,
     this.reminderScheduler,
+    this.doseAnnouncementService,
+    this.competitionDemo = const bool.fromEnvironment(
+      'COMPETITION_DEMO',
+      defaultValue: false,
+    ),
     super.key,
   });
 
@@ -50,13 +64,17 @@ class CareMateApp extends StatefulWidget {
   final AuthCoordinator? authCoordinator;
   final BackgroundSyncScheduler? backgroundSyncScheduler;
   final CareAccessGateway? careAccessGateway;
+  final CaregiverAlertNotifier? caregiverAlertNotifier;
   final PatientMedicationGateway? patientMedicationGateway;
   final InsightsGateway? insightsGateway;
   final DoseMutationStore? doseMutationStore;
   final DoseSyncGateway? doseSyncGateway;
   final PrescriptionExtractionGateway? prescriptionExtractionGateway;
   final PrescriptionTextRecognizer? prescriptionTextRecognizer;
+  final CareMatePreferencesController? preferencesController;
   final ReminderScheduler? reminderScheduler;
+  final DoseAnnouncementService? doseAnnouncementService;
+  final bool competitionDemo;
 
   @override
   State<CareMateApp> createState() => _CareMateAppState();
@@ -66,6 +84,7 @@ class _CareMateAppState extends State<CareMateApp> {
   late final AccountSettingsGateway _accountSettingsGateway;
   late final AuthCoordinator _authCoordinator;
   late final CareAccessGateway _careAccessGateway;
+  late final CaregiverAlertNotifier _caregiverAlertNotifier;
   late final bool _ownsCoordinator;
   late final BackgroundSyncScheduler _backgroundSyncScheduler;
   late final DoseMutationStore _doseMutationStore;
@@ -74,12 +93,20 @@ class _CareMateAppState extends State<CareMateApp> {
   late final InsightsGateway _insightsGateway;
   late final PrescriptionExtractionGateway _prescriptionExtractionGateway;
   late final PrescriptionTextRecognizer _prescriptionTextRecognizer;
+  late final CareMatePreferencesController _preferencesController;
   late final ReminderScheduler _reminderScheduler;
+  late final DoseAnnouncementService _doseAnnouncementService;
+  late final bool _ownsPreferencesController;
+  String? _loadedPreferencesForUser;
   CareMateLocalDatabase? _inMemoryDatabase;
 
   @override
   void initState() {
     super.initState();
+    _ownsPreferencesController = widget.preferencesController == null;
+    _preferencesController =
+        widget.preferencesController ?? CareMatePreferencesController();
+    unawaited(_preferencesController.initialize());
     _accountSettingsGateway =
         widget.accountSettingsGateway ??
         HttpAccountSettingsGateway(
@@ -89,6 +116,7 @@ class _CareMateAppState extends State<CareMateApp> {
           ),
         );
     _ownsCoordinator = widget.authCoordinator == null;
+    final usesInjectedApi = widget.patientMedicationGateway != null;
     _careAccessGateway =
         widget.careAccessGateway ??
         HttpCareAccessGateway(
@@ -97,6 +125,11 @@ class _CareMateAppState extends State<CareMateApp> {
             defaultValue: 'http://10.0.2.2:3000/api/v1',
           ),
         );
+    _caregiverAlertNotifier =
+        widget.caregiverAlertNotifier ??
+        (usesInjectedApi
+            ? const NoopCaregiverAlertNotifier()
+            : FlutterCaregiverAlertNotifier());
     _authCoordinator =
         widget.authCoordinator ??
         AuthCoordinator(
@@ -109,6 +142,7 @@ class _CareMateAppState extends State<CareMateApp> {
           refreshLock: const FileRefreshSessionLock(),
           sessionStore: SecureSessionStore(),
         );
+    _authCoordinator.addListener(_handleAuthStatus);
     _patientMedicationGateway =
         widget.patientMedicationGateway ??
         HttpPatientMedicationGateway(
@@ -125,7 +159,6 @@ class _CareMateAppState extends State<CareMateApp> {
             defaultValue: 'http://10.0.2.2:3000/api/v1',
           ),
         );
-    final usesInjectedApi = widget.patientMedicationGateway != null;
     _doseMutationStore =
         widget.doseMutationStore ??
         (usesInjectedApi
@@ -160,12 +193,16 @@ class _CareMateAppState extends State<CareMateApp> {
     _prescriptionTextRecognizer =
         widget.prescriptionTextRecognizer ?? MlKitPrescriptionTextRecognizer();
     _reminderScheduler = widget.reminderScheduler ?? FlutterReminderScheduler();
+    _doseAnnouncementService =
+        widget.doseAnnouncementService ?? FlutterTtsDoseAnnouncementService();
     _authCoordinator.initialize();
   }
 
   @override
   void dispose() {
+    _authCoordinator.removeListener(_handleAuthStatus);
     if (_ownsCoordinator) _authCoordinator.dispose();
+    if (_ownsPreferencesController) _preferencesController.dispose();
     _inMemoryDatabase?.close();
     super.dispose();
   }
@@ -193,6 +230,26 @@ class _CareMateAppState extends State<CareMateApp> {
       theme: CareMateTheme.light,
       darkTheme: CareMateTheme.dark,
       themeMode: ThemeMode.system,
+      builder: (context, child) => AnimatedBuilder(
+        animation: _preferencesController,
+        child: child,
+        builder: (context, child) {
+          final media = MediaQuery.of(context);
+          final currentScale = media.textScaler.scale(1);
+          final scale = _preferencesController.largeText
+              ? currentScale < 1.25
+                    ? 1.25
+                    : currentScale
+              : currentScale;
+          return CareMatePreferencesScope(
+            controller: _preferencesController,
+            child: MediaQuery(
+              data: media.copyWith(textScaler: TextScaler.linear(scale)),
+              child: child!,
+            ),
+          );
+        },
+      ),
       home: AnimatedBuilder(
         animation: _authCoordinator,
         builder: (context, _) => switch (_authCoordinator.status) {
@@ -203,10 +260,13 @@ class _CareMateAppState extends State<CareMateApp> {
             accessTokenProvider: _currentAccessToken,
             backgroundSyncScheduler: _backgroundSyncScheduler,
             careAccessGateway: _careAccessGateway,
+            caregiverAlertNotifier: _caregiverAlertNotifier,
+            competitionDemo: widget.competitionDemo,
             gateway: _patientMedicationGateway,
             insightsGateway: _insightsGateway,
             installationId: _authCoordinator.sessionStore.installationId,
             doseMutationStore: _doseMutationStore,
+            doseAnnouncementService: _doseAnnouncementService,
             doseSyncGateway: _doseSyncGateway,
             onLogout: _logout,
             prescriptionExtractionGateway: _prescriptionExtractionGateway,
@@ -225,6 +285,42 @@ class _CareMateAppState extends State<CareMateApp> {
   Future<String> _currentAccessToken() async =>
       (await _authCoordinator.sessionStore.readSession())?.accessToken ??
       _authCoordinator.session!.accessToken;
+
+  void _handleAuthStatus() {
+    final session = _authCoordinator.session;
+    if (_authCoordinator.status != AuthStatus.signedIn || session == null) {
+      return;
+    }
+    if (_loadedPreferencesForUser == session.userId) return;
+    _loadedPreferencesForUser = session.userId;
+    unawaited(_loadAccountPreferences(session.accessToken, session.userId));
+  }
+
+  Future<void> _loadAccountPreferences(
+    String accessToken,
+    String userId,
+  ) async {
+    try {
+      final preferences = await _accountSettingsGateway.getPreferences(
+        accessToken,
+      );
+      if (_loadedPreferencesForUser != userId) return;
+      await _preferencesController.setLocale(
+        preferences.locale,
+        persist: false,
+      );
+      await _preferencesController.setSimpleMode(
+        preferences.simpleMode,
+        persist: false,
+      );
+      await _preferencesController.setVoicePromptsEnabled(
+        preferences.voicePromptsEnabled,
+        persist: false,
+      );
+    } on Object {
+      // Device locale and locally saved preferences keep the app usable offline.
+    }
+  }
 }
 
 class _RestoringSessionPage extends StatelessWidget {

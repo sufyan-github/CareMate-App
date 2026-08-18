@@ -73,6 +73,8 @@ describe("account settings", () => {
       allowAnalytics: false,
       locale: "en-BD",
       showMedicineOnLockScreen: false,
+      simpleMode: false,
+      voicePromptsEnabled: true,
     });
     const updated = await request(app!.getHttpServer())
       .patch("/api/v1/me/preferences")
@@ -81,12 +83,16 @@ describe("account settings", () => {
         allowAnalytics: true,
         locale: "bn-BD",
         showMedicineOnLockScreen: true,
+        simpleMode: true,
+        voicePromptsEnabled: false,
       })
       .expect(200);
     expect(updated.body.data).toMatchObject({
       allowAnalytics: true,
       locale: "bn-BD",
       showMedicineOnLockScreen: true,
+      simpleMode: true,
+      voicePromptsEnabled: false,
     });
 
     const sessions = await request(app!.getHttpServer())
