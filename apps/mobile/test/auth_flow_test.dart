@@ -95,6 +95,8 @@ void main() {
 
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Sign out of this device'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out of this device'));
     await tester.pumpAndSettle();
     expect(find.text('Your medicines, right on time'), findsOneWidget);

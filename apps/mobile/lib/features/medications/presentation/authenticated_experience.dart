@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:caremate/features/medications/application/patient_medication_coordinator.dart';
 import 'package:caremate/features/care/domain/care_access_gateway.dart';
+import 'package:caremate/features/care/domain/caregiver_alert_notifier.dart';
 import 'package:caremate/features/care/presentation/care_access_entry_page.dart';
 import 'package:caremate/features/medications/domain/patient_medication_gateway.dart';
 import 'package:caremate/features/insights/domain/insights_gateway.dart';
@@ -15,6 +16,7 @@ import 'package:caremate/features/sync/application/dose_sync_coordinator.dart';
 import 'package:caremate/features/sync/domain/background_sync_scheduler.dart';
 import 'package:caremate/features/sync/domain/dose_sync_gateway.dart';
 import 'package:caremate/features/sync/domain/dose_sync_models.dart';
+import 'package:caremate/features/simple_mode/domain/dose_announcement_service.dart';
 
 class AuthenticatedExperience extends StatefulWidget {
   const AuthenticatedExperience({
@@ -23,10 +25,13 @@ class AuthenticatedExperience extends StatefulWidget {
     required this.accessTokenProvider,
     required this.backgroundSyncScheduler,
     required this.careAccessGateway,
+    required this.caregiverAlertNotifier,
+    required this.competitionDemo,
     required this.gateway,
     required this.installationId,
     required this.insightsGateway,
     required this.doseMutationStore,
+    required this.doseAnnouncementService,
     required this.doseSyncGateway,
     required this.onLogout,
     required this.prescriptionExtractionGateway,
@@ -42,10 +47,13 @@ class AuthenticatedExperience extends StatefulWidget {
   final Future<String> Function() accessTokenProvider;
   final BackgroundSyncScheduler backgroundSyncScheduler;
   final CareAccessGateway careAccessGateway;
+  final CaregiverAlertNotifier caregiverAlertNotifier;
+  final bool competitionDemo;
   final PatientMedicationGateway gateway;
   final Future<String> Function() installationId;
   final InsightsGateway insightsGateway;
   final DoseMutationStore doseMutationStore;
+  final DoseAnnouncementService doseAnnouncementService;
   final DoseSyncGateway doseSyncGateway;
   final Future<void> Function() onLogout;
   final PrescriptionExtractionGateway prescriptionExtractionGateway;
@@ -129,6 +137,9 @@ class _AuthenticatedExperienceState extends State<AuthenticatedExperience>
         PatientMedicationStatus.ready => AppShell(
           accountSettingsGateway: widget.accountSettingsGateway,
           careAccessGateway: widget.careAccessGateway,
+          caregiverAlertNotifier: widget.caregiverAlertNotifier,
+          competitionDemo: widget.competitionDemo,
+          doseAnnouncementService: widget.doseAnnouncementService,
           medicationCoordinator: _coordinator,
           insightsGateway: widget.insightsGateway,
           onLogout: widget.onLogout,

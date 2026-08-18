@@ -20,12 +20,18 @@ class HttpAccountSettingsGateway implements AccountSettingsGateway {
     bool? allowAnalytics,
     String? locale,
     bool? showMedicineOnLockScreen,
+    bool? simpleMode,
+    bool? voicePromptsEnabled,
   }) async {
     final payload = <String, dynamic>{};
     if (allowAnalytics != null) payload['allowAnalytics'] = allowAnalytics;
     if (locale != null) payload['locale'] = locale;
     if (showMedicineOnLockScreen != null) {
       payload['showMedicineOnLockScreen'] = showMedicineOnLockScreen;
+    }
+    if (simpleMode != null) payload['simpleMode'] = simpleMode;
+    if (voicePromptsEnabled != null) {
+      payload['voicePromptsEnabled'] = voicePromptsEnabled;
     }
     return _preferences(
       await _request('PATCH', '/me/preferences', accessToken, payload),

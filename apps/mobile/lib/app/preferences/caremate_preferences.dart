@@ -32,23 +32,33 @@ class CareMatePreferencesController extends ChangeNotifier {
 
   static const _largeTextKey = 'caremate.preference.large-text';
   static const _localeKey = 'caremate.preference.locale';
+  static const _simpleModeKey = 'caremate.preference.simple-mode';
+  static const _voicePromptsKey = 'caremate.preference.voice-prompts';
 
   final CareMatePreferenceStore _store;
   bool _largeText = false;
+  bool _simpleMode = false;
+  bool _voicePromptsEnabled = true;
   String _locale;
 
   bool get isBangla => _locale == 'bn-BD';
   bool get largeText => _largeText;
   String get locale => _locale;
+  bool get simpleMode => _simpleMode;
+  bool get voicePromptsEnabled => _voicePromptsEnabled;
 
   Future<void> initialize() async {
     try {
       final savedLocale = await _store.read(_localeKey);
       final savedLargeText = await _store.read(_largeTextKey);
+      final savedSimpleMode = await _store.read(_simpleModeKey);
+      final savedVoicePrompts = await _store.read(_voicePromptsKey);
       if (savedLocale == 'bn-BD' || savedLocale == 'en-BD') {
         _locale = savedLocale!;
       }
       _largeText = savedLargeText == 'true';
+      _simpleMode = savedSimpleMode == 'true';
+      _voicePromptsEnabled = savedVoicePrompts != 'false';
       notifyListeners();
     } on Object {
       // Device preferences are optional; safe defaults remain available.
@@ -77,6 +87,35 @@ class CareMatePreferencesController extends ChangeNotifier {
       await _store.write(_localeKey, normalized);
     } on Object {
       // The account preference remains authoritative if local storage fails.
+    }
+  }
+
+  Future<void> setSimpleMode(bool enabled, {bool persist = true}) async {
+    if (_simpleMode != enabled) {
+      _simpleMode = enabled;
+      notifyListeners();
+    }
+    if (!persist) return;
+    try {
+      await _store.write(_simpleModeKey, enabled.toString());
+    } on Object {
+      // The active session keeps the preference if secure storage is unavailable.
+    }
+  }
+
+  Future<void> setVoicePromptsEnabled(
+    bool enabled, {
+    bool persist = true,
+  }) async {
+    if (_voicePromptsEnabled != enabled) {
+      _voicePromptsEnabled = enabled;
+      notifyListeners();
+    }
+    if (!persist) return;
+    try {
+      await _store.write(_voicePromptsKey, enabled.toString());
+    } on Object {
+      // The active session keeps the preference if secure storage is unavailable.
     }
   }
 }

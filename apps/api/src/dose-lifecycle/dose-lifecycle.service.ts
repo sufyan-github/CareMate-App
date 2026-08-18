@@ -8,6 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import { ulid } from "ulid";
 
 import { AuthError } from "../auth/auth-error.js";
+import { CaregiverAlertsService } from "../caregiver-alerts/caregiver-alerts.service.js";
 import { DatabaseService } from "../database/database.service.js";
 import type { DoseCommandDto } from "./dose-lifecycle.dto.js";
 
@@ -37,6 +38,7 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly config: ConfigService,
     private readonly database: DatabaseService,
+    private readonly caregiverAlerts: CaregiverAlertsService,
   ) {}
 
   onModuleInit(): void {
@@ -160,7 +162,9 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
             now.getTime() + input.payload.snoozeMinutes * 60_000,
           );
           const responseDueAt = new Date(
-            snoozedUntil.getTime() + this.graceMinutes() * 60_000,
+            snoozedUntil.getTime() +
+              occurrence.medication.patientProfile.missedDoseGraceMinutes *
+                60_000,
           );
           const reminderSentAt = occurrence.reminderSentAt ?? now;
           const updated = await transaction.doseOccurrence.updateMany({
@@ -272,7 +276,9 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
         const responseDueAt =
           occurrence.responseDueAt ??
           new Date(
-            occurrence.plannedAt.getTime() + this.graceMinutes() * 60_000,
+            occurrence.plannedAt.getTime() +
+              occurrence.medication.patientProfile.missedDoseGraceMinutes *
+                60_000,
           );
         const becameMissed =
           !occurrence.missedAt &&
@@ -368,6 +374,13 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
         });
         return { alreadyApplied: false, data: result };
       });
+      if (data.data.status === "CONFIRMED" && data.data.missedAt) {
+        await this.caregiverAlerts.fanOutForOccurrence(occurrenceId);
+        await this.caregiverAlerts.resolveForOccurrence(
+          occurrenceId,
+          new Date(data.data.confirmedAt!),
+        );
+      }
       return this.response(data.data, data.alreadyApplied);
     } catch (error) {
       const prior = await this.database.doseEvent.findUnique({
@@ -385,81 +398,93 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async evaluateOccurrenceState(occurrenceId: string): Promise<void> {
-    await this.database.$transaction(async (transaction) => {
-      const occurrence = await transaction.doseOccurrence.findUnique({
-        where: { id: occurrenceId },
-      });
-      if (!occurrence) return;
-      const now = new Date();
-      const nextEventSequence =
-        (await transaction.doseEvent.count({ where: { occurrenceId } })) + 1;
-      const responseDueAt =
-        occurrence.responseDueAt ??
-        new Date(occurrence.plannedAt.getTime() + this.graceMinutes() * 60_000);
-      if (
-        ["SCHEDULED", "REMINDER_SENT", "SNOOZED"].includes(occurrence.status) &&
-        responseDueAt < now
-      ) {
+    const becameMissed = await this.database.$transaction(
+      async (transaction) => {
+        const occurrence = await transaction.doseOccurrence.findUnique({
+          include: { patientProfile: true },
+          where: { id: occurrenceId },
+        });
+        if (!occurrence) return false;
+        const now = new Date();
+        const nextEventSequence =
+          (await transaction.doseEvent.count({ where: { occurrenceId } })) + 1;
+        const responseDueAt =
+          occurrence.responseDueAt ??
+          new Date(
+            occurrence.plannedAt.getTime() +
+              occurrence.patientProfile.missedDoseGraceMinutes * 60_000,
+          );
+        if (
+          ["SCHEDULED", "REMINDER_SENT", "SNOOZED"].includes(
+            occurrence.status,
+          ) &&
+          responseDueAt < now
+        ) {
+          const updated = await transaction.doseOccurrence.updateMany({
+            data: {
+              missedAt: now,
+              responseDueAt,
+              snoozedUntil: null,
+              status: "MISSED",
+              version: { increment: 1 },
+            },
+            where: {
+              id: occurrenceId,
+              status: occurrence.status,
+              version: occurrence.version,
+            },
+          });
+          if (updated.count === 0) return false;
+          await transaction.doseEvent.create({
+            data: {
+              eventType: "MISSED",
+              id: ulid(),
+              metadataJson: JSON.stringify({
+                meaning: "NO_OUTCOME_RECORDED_BY_DEADLINE",
+              }),
+              occurrenceId,
+              sequence: nextEventSequence,
+            },
+          });
+          return true;
+        }
+        if (
+          occurrence.status !== "SNOOZED" ||
+          !occurrence.snoozedUntil ||
+          occurrence.snoozedUntil > now
+        ) {
+          return false;
+        }
         const updated = await transaction.doseOccurrence.updateMany({
           data: {
-            missedAt: now,
-            responseDueAt,
+            reminderSentAt: now,
             snoozedUntil: null,
-            status: "MISSED",
+            status: "REMINDER_SENT",
             version: { increment: 1 },
           },
           where: {
             id: occurrenceId,
-            status: occurrence.status,
+            snoozedUntil: occurrence.snoozedUntil,
+            status: "SNOOZED",
             version: occurrence.version,
           },
         });
-        if (updated.count === 0) return;
+        if (updated.count === 0) return false;
         await transaction.doseEvent.create({
           data: {
-            eventType: "MISSED",
+            eventType: "REMINDER_SENT",
             id: ulid(),
-            metadataJson: JSON.stringify({
-              meaning: "NO_OUTCOME_RECORDED_BY_DEADLINE",
-            }),
+            metadataJson: JSON.stringify({ source: "SNOOZE_EXPIRED" }),
             occurrenceId,
             sequence: nextEventSequence,
           },
         });
-        return;
-      }
-      if (
-        occurrence.status !== "SNOOZED" ||
-        !occurrence.snoozedUntil ||
-        occurrence.snoozedUntil > now
-      ) {
-        return;
-      }
-      const updated = await transaction.doseOccurrence.updateMany({
-        data: {
-          reminderSentAt: now,
-          snoozedUntil: null,
-          status: "REMINDER_SENT",
-          version: { increment: 1 },
-        },
-        where: {
-          id: occurrenceId,
-          snoozedUntil: occurrence.snoozedUntil,
-          status: "SNOOZED",
-          version: occurrence.version,
-        },
-      });
-      if (updated.count === 0) return;
-      await transaction.doseEvent.create({
-        data: {
-          eventType: "REMINDER_SENT",
-          id: ulid(),
-          metadataJson: JSON.stringify({ source: "SNOOZE_EXPIRED" }),
-          occurrenceId,
-          sequence: nextEventSequence,
-        },
-      });
-    });
+        return false;
+      },
+    );
+    if (becameMissed) {
+      await this.caregiverAlerts.fanOutForOccurrence(occurrenceId);
+    }
   }
 
   private async repairOverdueOccurrences(): Promise<void> {
@@ -467,9 +492,7 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
     this.repairRunning = true;
     try {
       const now = new Date();
-      const plannedDeadline = new Date(
-        now.getTime() - this.graceMinutes() * 60_000,
-      );
+      const plannedDeadline = new Date(now.getTime() - 5 * 60_000);
       const overdue = await this.database.doseOccurrence.findMany({
         select: { id: true },
         where: {
@@ -486,6 +509,69 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
     } finally {
       this.repairRunning = false;
     }
+  }
+
+  async simulateMiss(
+    userId: string,
+    patientProfileId: string,
+    minutesLate: number,
+  ) {
+    if (
+      this.config.get<string>("COMPETITION_DEMO") !== "true" &&
+      this.config.get<string>("NODE_ENV") !== "test"
+    ) {
+      this.notFound();
+    }
+    const profile = await this.database.patientProfile.findFirst({
+      where: { id: patientProfileId, ownerUserId: userId },
+    });
+    if (!profile) this.notFound();
+    const occurrence = await this.database.doseOccurrence.findFirst({
+      orderBy: { plannedAt: "desc" },
+      where: {
+        patientProfileId,
+        status: { in: ["SCHEDULED", "REMINDER_SENT", "SNOOZED"] },
+      },
+    });
+    if (!occurrence) {
+      throw new AuthError(
+        HttpStatus.CONFLICT,
+        "DEMO_OCCURRENCE_UNAVAILABLE",
+        "No unresolved demo dose is available to mark missed.",
+      );
+    }
+    const now = new Date();
+    const plannedAt = new Date(now.getTime() - minutesLate * 60_000);
+    const plannedLocalDateTime = await this.uniqueDemoLocalDateTime(
+      occurrence.id,
+      occurrence.scheduleId,
+      occurrence.ruleRevision,
+      this.localDateTime(plannedAt, profile.timezone),
+    );
+    await this.database.doseOccurrence.update({
+      data: {
+        missedAt: null,
+        plannedAt,
+        plannedLocalDateTime,
+        reminderSentAt: plannedAt,
+        responseDueAt: new Date(now.getTime() - 1_000),
+        snoozedUntil: null,
+        status: "REMINDER_SENT",
+        version: { increment: 1 },
+      },
+      where: { id: occurrence.id },
+    });
+    await this.evaluateOccurrenceState(occurrence.id);
+    const updated = await this.database.doseOccurrence.findUniqueOrThrow({
+      where: { id: occurrence.id },
+    });
+    return this.response({
+      id: updated.id,
+      missedAt: updated.missedAt?.toISOString() ?? null,
+      plannedAt: updated.plannedAt.toISOString(),
+      status: updated.status,
+      version: updated.version,
+    });
   }
 
   private async readableOccurrence(
@@ -601,14 +687,6 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  private graceMinutes(): number {
-    const configured = Number(this.config.get<string>("DOSE_GRACE_MINUTES"));
-    if (!Number.isInteger(configured) || configured < 5 || configured > 240) {
-      return 60;
-    }
-    return configured;
-  }
-
   private repairIntervalMilliseconds(): number {
     const configured = Number(
       this.config.get<string>("DOSE_REPAIR_INTERVAL_SECONDS"),
@@ -618,6 +696,50 @@ export class DoseLifecycleService implements OnModuleInit, OnModuleDestroy {
         ? configured
         : 60;
     return seconds * 1_000;
+  }
+
+  private localDateTime(value: Date, timezone: string): string {
+    const values = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        day: "2-digit",
+        hour: "2-digit",
+        hourCycle: "h23",
+        minute: "2-digit",
+        month: "2-digit",
+        timeZone: timezone,
+        year: "numeric",
+      })
+        .formatToParts(value)
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value]),
+    );
+    return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
+  }
+
+  private async uniqueDemoLocalDateTime(
+    occurrenceId: string,
+    scheduleId: string,
+    ruleRevision: number,
+    base: string,
+  ): Promise<string> {
+    for (let second = 0; second < 60; second += 1) {
+      const candidate = `${base}:${second.toString().padStart(2, "0")}`;
+      const conflict = await this.database.doseOccurrence.findFirst({
+        select: { id: true },
+        where: {
+          id: { not: occurrenceId },
+          plannedLocalDateTime: candidate,
+          ruleRevision,
+          scheduleId,
+        },
+      });
+      if (!conflict) return candidate;
+    }
+    throw new AuthError(
+      HttpStatus.CONFLICT,
+      "DEMO_OCCURRENCE_TIME_CONFLICT",
+      "The demo schedule has too many occurrences in the selected minute.",
+    );
   }
 
   private response(data: unknown, alreadyApplied = false) {

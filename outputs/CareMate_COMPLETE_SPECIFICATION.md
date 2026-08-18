@@ -1,4 +1,4 @@
-# CareMate — Complete Product and Technical Specification
+# CareMate— Complete Product and Technical Specification
 
 **Document status:** Implementation baseline  
 **Version:** 1.0  
@@ -12,7 +12,7 @@
 
 ## 1. Executive specification
 
-CareMate helps a Patient Profile turn a photographed or manually entered prescription into a confirmed medication plan, receive dependable on-device reminders, report a dose outcome, track estimated stock, and—when explicit consent exists—notify a Caregiver after a missed dose. Premium capabilities add expanded caregiving, reports, optional voice assistance, and partner-backed delivery channels.
+CareMate helps a Patient Profile turn a photographed or manually entered prescription into a confirmed medication plan, receive dependable on-device reminders, report a dose outcome, track estimated stoick, and—when explicit consent exists—notify a Caregiver after a missed dose. Premium capabilities add expanded caregiving, reports, optional voice assistance, and partner-backed delivery channels.
 
 The implementation is an offline-capable Flutter client backed by a NestJS modular monolith, a separate asynchronous worker, PostgreSQL, Redis/BullMQ, S3-compatible object storage, Firebase Cloud Messaging (FCM), a provider-neutral SMS Interface, a bKash Payment Adapter, and an optional bdapps Carrier Billing Adapter. All external integrations are behind narrow Interfaces so demo and unapproved provider behavior cannot contaminate core medication logic.
 

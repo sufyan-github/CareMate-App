@@ -269,8 +269,18 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
   PatientProfile _profile(Map<String, dynamic> data) => PatientProfile(
     accessRole: data['accessRole'] as String? ?? 'OWNER',
     canManage: data['canManage'] as bool? ?? true,
+    canReceiveMissedDoseAlerts:
+        (data['permissions']
+                as Map<String, dynamic>?)?['canReceiveMissedDoseAlerts']
+            as bool? ??
+        false,
+    canViewMedicationPlan:
+        (data['permissions'] as Map<String, dynamic>?)?['canViewMedicationPlan']
+            as bool? ??
+        true,
     displayName: data['displayName'] as String,
     id: data['id'] as String,
+    missedDoseGraceMinutes: data['missedDoseGraceMinutes'] as int? ?? 45,
     timezone: data['timezone'] as String,
     version: data['version'] as int,
   );
@@ -285,6 +295,7 @@ class HttpPatientMedicationGateway implements PatientMedicationGateway {
       displayName: data['displayName'] as String,
       form: data['form'] as String,
       id: data['id'] as String,
+      mealRelation: instruction['mealRelation'] as String? ?? 'UNSPECIFIED',
       quantityLabel:
           '${instruction['quantityValue']} ${instruction['quantityUnit'].toString().toLowerCase()}',
       status: data['status'] as String,

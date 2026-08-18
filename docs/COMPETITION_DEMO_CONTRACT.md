@@ -6,15 +6,19 @@ This document is the operational contract for a five-minute physical CareMate de
 
 ## Required environment
 
-- One authorized Android phone with at least 30% battery.
+- Two authorized Android phones with at least 50% battery, labelled patient (**P**) and caregiver (**C**).
 - CareMate competition build installed with a known signing identity.
 - Local API healthy and reachable through a verified USB reverse tunnel, or an approved remote demo API.
 - Synthetic demo accounts only.
 - Development OTP visibly labelled; no claim that an SMS was delivered.
 - OpenAI/managed OCR either configured server-side or deliberately disabled with a manual-entry fallback prepared.
 - Notifications allowed and exact-alarm readiness checked before judging.
+- Competition build compiled with `COMPETITION_DEMO=true`; the trophy action opens the presenter-only five-minute guide.
+- API started with the separate server environment value `COMPETITION_DEMO=true`; otherwise the synthetic miss endpoint intentionally returns not found.
 
 ## Five-minute script
+
+Run `scripts/prepare-competition-demo.ps1` first. It idempotently prepares the synthetic owner, a due and upcoming dose, 14 tablets of opening stock with a low-stock threshold, and an accepted synthetic caregiver relationship. The script never sends SMS or uses real patient data. `scripts/force-missed-dose.ps1 -Minutes 46` is the deterministic caregiver-alert trigger and is accepted only when the API has `COMPETITION_DEMO=true`.
 
 ### 0:00–0:30 — Problem and differentiation
 
@@ -32,9 +36,9 @@ Capture a prepared synthetic prescription. Point out cloud consent, OCR evidence
 
 Show the next Dose Occurrence, snooze it, then disable the API tunnel and confirm another synthetic occurrence. Show “Pending sync”, kill and reopen the app, and prove the saved plan and pending action remain.
 
-### 3:15–4:15 — Family and inventory value
+### 3:15–4:15 — Live family-care loop
 
-Restore the tunnel and sync. Show the stock decrement and estimated run-out. Open Care and explain consent, granular permissions and immediate revocation using seeded synthetic relationships.
+Restore the tunnel and sync. Force a synthetic miss on P. C must show the private alert through the foreground 30-second poll, acknowledge it, and expose the call action. Late-confirm on P, then show the automatically resolved minutes-late state on C. Explain consent, medicine-name redaction, quiet hours, and immediate revocation.
 
 ### 4:15–5:00 — Evidence and close
 
@@ -49,6 +53,9 @@ Show the app-based indicator with its numerator, denominator and non-clinical ca
 - Restoring connectivity produces one authoritative outcome and one inventory consumption entry.
 - Screen text is readable at arm’s length and all primary actions have clear labels.
 - The presenter can explain what is implemented, what is simulated and what is externally gated.
+- The caregiver loop completes miss → alert → acknowledge → late-confirm → resolve in at most 60 seconds outside quiet hours.
+- A caregiver without medication-plan permission sees no medicine name.
+- Revoking the caregiver prevents alert reads and all future fan-out immediately.
 
 ## Abort and fallback rules
 

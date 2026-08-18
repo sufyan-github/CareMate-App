@@ -36,7 +36,7 @@ if ([string]::IsNullOrWhiteSpace($DeviceId)) {
 if (-not $SkipBuild) {
   Push-Location $mobileRoot
   try {
-    flutter build apk --debug "--dart-define=API_BASE_URL=$ApiBaseUrl"
+    flutter build apk --debug "--dart-define=API_BASE_URL=$ApiBaseUrl" "--dart-define=COMPETITION_DEMO=true"
     if ($LASTEXITCODE -ne 0) { throw "Flutter APK build failed." }
   } finally {
     Pop-Location

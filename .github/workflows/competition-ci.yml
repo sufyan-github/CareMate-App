@@ -54,7 +54,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build apk --debug --dart-define=API_BASE_URL=http://127.0.0.1:3000/api/v1
+      - run: flutter build apk --debug --dart-define=API_BASE_URL=http://127.0.0.1:3000/api/v1 --dart-define=COMPETITION_DEMO=true
       - uses: actions/upload-artifact@v4
         with:
           name: caremate-competition-debug-apk

@@ -1,9 +1,12 @@
 # CareMate Five-Minute Judge Script
 
+Before presenting, start the API with `COMPETITION_DEMO=true`, then run `scripts/prepare-competition-demo.ps1`. In the competition APK, tap the trophy icon at any point to reopen the five-step presenter guide; it is excluded from ordinary builds.
+
 ## Before entering the room
 
 - Run `scripts/prepare-competition-demo.ps1` against the local API.
-- Run `scripts/run-competition-device.ps1` and confirm package `com.caremate.competition` is foregrounded.
+- Run `scripts/run-competition-device.ps1` on both prepared phones and confirm package `com.caremate.competition` is foregrounded.
+- Keep the owner signed in on phone **P** and the accepted synthetic caregiver signed in on phone **C**, with **Care** open on C.
 - Keep airplane-mode quick settings available; do not expose secrets, tokens, real phone numbers, or real prescriptions.
 - Use the synthetic prescription and demo number `01700123456`; development OTP is visibly labelled `123456`.
 
@@ -24,25 +27,27 @@ Open **Scan prescription**. Point out:
 
 If providers are unavailable, choose manual prescription text and say: “The safe fallback is a feature, not a failure.”
 
-## 1:45–2:35 — Deterministic reminders
+## 1:45–2:25 — Simple Mode and offline action
 
-Show the reviewed Napa entry and its seeded due-now Asia/Dhaka schedule. Explain that Android schedules local reminders; the server does not need to be reachable at dose time.
+On P, enable **More → Simple Mode**, then enable airplane mode. Show one large dose card, play the Bangla prompt, and confirm the dose. Point to **Pending sync** and say: “One tap; recorded locally and encrypted. This is a self-reported action, not proof of ingestion.”
 
-## 2:35–3:25 — Offline dose action
+## 2:25–2:55 — Safe recovery
 
-Disable network or stop API access. Confirm, snooze, or skip the due demo dose. Show **Pending sync** and the saved-phone explanation. Restore connectivity, press **Sync now**, and show the resolved state.
+Force-stop and reopen P while it remains offline. Show the saved plan and pending action. Restore connectivity, press **Sync now**, and show one authoritative result.
 
-## 3:25–4:15 — Consent-based care
+## 2:55–4:05 — Live family-care loop
 
-Open **Care**, enter the synthetic caregiver number, choose permissions, and stop at the recap. Read the acceptance boundary: no access begins until the recipient accepts; no SMS is claimed in this demo. Confirm, show pending state, then show revocation.
+On P, open **Care** and tap **Demo: simulate a missed dose now** (or run `scripts/force-missed-dose.ps1 -Minutes 46`). Within 30 seconds C shows a private local notification and an in-app card. Say: “The caregiver sees the medicine only because that exact permission was accepted.”
 
-## 4:15–4:45 — Bangladesh and accessibility
+On C, tap **Acknowledge** and point to **Call patient**. On P, late-confirm the missed dose. Refresh C and show **Resolved — taken 46 minutes late**. State that the action is self-reported and that revoking the caregiver stops alert access and new fan-out immediately.
 
-Open **More → Language**, select বাংলা, and enable larger text. Return to Today to show immediate Bangla navigation and reflow. Explain that interface translation never changes medicine names or medical meaning and still requires native review before a pilot.
+## 4:05–4:35 — Inventory and transparent insight
 
-## 4:45–5:00 — Close
+Show the stock movement and app-based indicator with its numerator, denominator, timezone, and non-clinical explanation.
 
-“CareMate’s advantage is not an AI claim. It is the complete trust loop: visible evidence, human review, deterministic reminders, offline resilience, and patient-controlled family care.”
+## 4:35–5:00 — Honest close
+
+“Working today: the Android app, offline dose actions, Simple Mode, Bangla device voice, consented caregiver alerts, inventory, and transparent reports. Still gated: production SMS and push, clinical validation, native-language review, and our physical acceptance checks. CareMate supports safer routines; it does not diagnose, prescribe, or prove ingestion.”
 
 ## Fallback order
 
@@ -50,7 +55,8 @@ Open **More → Language**, select বাংলা, and enable larger text. Retu
 2. If API fails after sign-in, show cached Today and offline dose action.
 3. If notification permission is blocked, show readiness guidance and the scheduled plan.
 4. If the physical device fails, use the verified APK on the backup phone.
-5. If both devices fail, play the privacy-reviewed backup recording, then show CI and architecture evidence.
+5. If the caregiver alert does not arrive within 30 seconds, pull to refresh once; then use the recorded two-device run without claiming the live channel passed.
+6. If both devices fail, play the privacy-reviewed backup recording, then show CI and architecture evidence.
 
 ## Backup recording plan
 

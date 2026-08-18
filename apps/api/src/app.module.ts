@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 
 import { AuthModule } from "./auth/auth.module.js";
 import { CareAccessModule } from "./care-access/care-access.module.js";
+import { CaregiverAlertsModule } from "./caregiver-alerts/caregiver-alerts.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { DeviceInstallationModule } from "./device-installation/device-installation.module.js";
 import { DoseLifecycleModule } from "./dose-lifecycle/dose-lifecycle.module.js";
@@ -22,6 +23,7 @@ import { SyncModule } from "./sync/sync.module.js";
     }),
     AuthModule,
     CareAccessModule,
+    CaregiverAlertsModule,
     DatabaseModule,
     DeviceInstallationModule,
     DoseLifecycleModule,

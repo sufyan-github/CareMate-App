@@ -18,6 +18,8 @@ export class AccountService {
       allowAnalytics: user.allowAnalytics,
       locale: user.locale,
       showMedicineOnLockScreen: user.showMedicineOnLockScreen,
+      simpleMode: user.simpleMode,
+      voicePromptsEnabled: user.voicePromptsEnabled,
     });
   }
 

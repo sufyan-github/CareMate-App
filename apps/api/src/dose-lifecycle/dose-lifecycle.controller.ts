@@ -12,7 +12,7 @@ import {
   AccessSessionGuard,
   type AuthenticatedRequest,
 } from "../auth/access-session.guard.js";
-import { DoseCommandDto } from "./dose-lifecycle.dto.js";
+import { DoseCommandDto, SimulateMissDto } from "./dose-lifecycle.dto.js";
 import { DoseLifecycleService } from "./dose-lifecycle.service.js";
 
 @Controller("dose-occurrences")
@@ -39,6 +39,25 @@ export class DoseLifecycleController {
       request.auth.sessionId,
       occurrenceId,
       input,
+    );
+  }
+}
+
+@Controller("patient-profiles")
+@UseGuards(AccessSessionGuard)
+export class DoseLifecycleCompetitionController {
+  constructor(private readonly service: DoseLifecycleService) {}
+
+  @Post(":profileId/dose-occurrences/simulate-miss")
+  simulateMiss(
+    @Req() request: AuthenticatedRequest,
+    @Param("profileId") profileId: string,
+    @Body() input: SimulateMissDto,
+  ) {
+    return this.service.simulateMiss(
+      request.auth.userId,
+      profileId,
+      input.minutesLate,
     );
   }
 }

@@ -232,4 +232,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Your privacy controls'), findsOneWidget);
   });
+
+  testWidgets('Simple Mode is reachable in two taps and persists to account', (
+    tester,
+  ) async {
+    final accountGateway = accountSettingsGateway();
+    await tester.pumpWidget(
+      CareMateApp(
+        accountSettingsGateway: accountGateway,
+        authCoordinator: authenticatedCoordinator(),
+        patientMedicationGateway: existingPatientGateway(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('simple-mode-setting')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simple Mode'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(accountGateway.preferences.simpleMode, isTrue);
+  });
 }

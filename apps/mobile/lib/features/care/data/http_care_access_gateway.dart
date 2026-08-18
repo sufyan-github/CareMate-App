@@ -79,6 +79,60 @@ class HttpCareAccessGateway implements CareAccessGateway {
     ),
   );
 
+  @override
+  Future<List<CaregiverAlert>> listAlerts({
+    required String accessToken,
+    required String profileId,
+  }) async => _alerts(
+    await _request(
+      'GET',
+      '/caregiver-alerts?profileId=${Uri.encodeQueryComponent(profileId)}',
+      accessToken,
+    ),
+  );
+
+  @override
+  Future<void> acknowledgeAlert({
+    required String accessToken,
+    required String alertId,
+  }) async {
+    await _request(
+      'PATCH',
+      '/caregiver-alerts/$alertId/acknowledge',
+      accessToken,
+    );
+  }
+
+  @override
+  Future<int> updateMissedDoseGrace({
+    required String accessToken,
+    required int expectedVersion,
+    required int minutes,
+    required String profileId,
+  }) async {
+    final body = await _request(
+      'PATCH',
+      '/patient-profiles/$profileId',
+      accessToken,
+      {'expectedVersion': expectedVersion, 'missedDoseGraceMinutes': minutes},
+    );
+    return (body['data'] as Map<String, dynamic>)['version'] as int;
+  }
+
+  @override
+  Future<void> simulateMiss({
+    required String accessToken,
+    required int minutesLate,
+    required String profileId,
+  }) async {
+    await _request(
+      'POST',
+      '/patient-profiles/$profileId/dose-occurrences/simulate-miss',
+      accessToken,
+      {'minutesLate': minutesLate},
+    );
+  }
+
   Future<Map<String, dynamic>> _request(
     String method,
     String path,
@@ -120,6 +174,11 @@ class HttpCareAccessGateway implements CareAccessGateway {
   List<CareInvitation> _list(Map<String, dynamic> body) =>
       (body['data'] as List<dynamic>)
           .map((item) => CareInvitation.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false);
+
+  List<CaregiverAlert> _alerts(Map<String, dynamic> body) =>
+      (body['data'] as List<dynamic>)
+          .map((item) => CaregiverAlert.fromJson(item as Map<String, dynamic>))
           .toList(growable: false);
 
   String? _errorMessage(Object? value) {

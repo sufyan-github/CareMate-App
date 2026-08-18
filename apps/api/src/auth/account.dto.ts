@@ -12,6 +12,14 @@ export class UpdateAccountPreferencesDto {
   @IsOptional()
   @IsBoolean()
   allowAnalytics?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  simpleMode?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  voicePromptsEnabled?: boolean;
 }
 
 export class RequestAccountDeletionDto {

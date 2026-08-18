@@ -2,12 +2,14 @@ import 'package:caremate/app/preferences/caremate_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('restores the saved language and larger-text preference', () async {
+  test('restores language and older-adult display preferences', () async {
     final store = _MemoryPreferenceStore();
     final first = CareMatePreferencesController(store: store);
 
     await first.setLocale('bn-BD');
     await first.setLargeText(true);
+    await first.setSimpleMode(true);
+    await first.setVoicePromptsEnabled(false);
     first.dispose();
 
     final restored = CareMatePreferencesController(store: store);
@@ -15,6 +17,8 @@ void main() {
 
     expect(restored.locale, 'bn-BD');
     expect(restored.largeText, isTrue);
+    expect(restored.simpleMode, isTrue);
+    expect(restored.voicePromptsEnabled, isFalse);
     restored.dispose();
   });
 

@@ -16,6 +16,8 @@ void main() {
         expect(jsonDecode(request.body), {
           'allowAnalytics': true,
           'locale': 'bn-BD',
+          'simpleMode': true,
+          'voicePromptsEnabled': false,
         });
         return http.Response(
           jsonEncode({
@@ -23,6 +25,8 @@ void main() {
               'allowAnalytics': true,
               'locale': 'bn-BD',
               'showMedicineOnLockScreen': false,
+              'simpleMode': true,
+              'voicePromptsEnabled': false,
             },
           }),
           200,
@@ -35,9 +39,13 @@ void main() {
       accessToken: 'access-1',
       allowAnalytics: true,
       locale: 'bn-BD',
+      simpleMode: true,
+      voicePromptsEnabled: false,
     );
 
     expect(preferences.locale, 'bn-BD');
     expect(preferences.allowAnalytics, isTrue);
+    expect(preferences.simpleMode, isTrue);
+    expect(preferences.voicePromptsEnabled, isFalse);
   });
 }

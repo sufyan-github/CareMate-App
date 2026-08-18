@@ -330,6 +330,47 @@ class $CachedPatientProfilesTable extends CachedPatientProfiles
       'CHECK ("can_manage" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _canReceiveMissedDoseAlertsMeta =
+      const VerificationMeta('canReceiveMissedDoseAlerts');
+  @override
+  late final GeneratedColumn<bool> canReceiveMissedDoseAlerts =
+      GeneratedColumn<bool>(
+        'can_receive_missed_dose_alerts',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("can_receive_missed_dose_alerts" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _canViewMedicationPlanMeta =
+      const VerificationMeta('canViewMedicationPlan');
+  @override
+  late final GeneratedColumn<bool> canViewMedicationPlan =
+      GeneratedColumn<bool>(
+        'can_view_medication_plan',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("can_view_medication_plan" IN (0, 1))',
+        ),
+        defaultValue: const Constant(true),
+      );
+  static const VerificationMeta _missedDoseGraceMinutesMeta =
+      const VerificationMeta('missedDoseGraceMinutes');
+  @override
+  late final GeneratedColumn<int> missedDoseGraceMinutes = GeneratedColumn<int>(
+    'missed_dose_grace_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(45),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -349,6 +390,9 @@ class $CachedPatientProfilesTable extends CachedPatientProfiles
     version,
     accessRole,
     canManage,
+    canReceiveMissedDoseAlerts,
+    canViewMedicationPlan,
+    missedDoseGraceMinutes,
     updatedAt,
   ];
   @override
@@ -411,6 +455,33 @@ class $CachedPatientProfilesTable extends CachedPatientProfiles
     } else if (isInserting) {
       context.missing(_canManageMeta);
     }
+    if (data.containsKey('can_receive_missed_dose_alerts')) {
+      context.handle(
+        _canReceiveMissedDoseAlertsMeta,
+        canReceiveMissedDoseAlerts.isAcceptableOrUnknown(
+          data['can_receive_missed_dose_alerts']!,
+          _canReceiveMissedDoseAlertsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('can_view_medication_plan')) {
+      context.handle(
+        _canViewMedicationPlanMeta,
+        canViewMedicationPlan.isAcceptableOrUnknown(
+          data['can_view_medication_plan']!,
+          _canViewMedicationPlanMeta,
+        ),
+      );
+    }
+    if (data.containsKey('missed_dose_grace_minutes')) {
+      context.handle(
+        _missedDoseGraceMinutesMeta,
+        missedDoseGraceMinutes.isAcceptableOrUnknown(
+          data['missed_dose_grace_minutes']!,
+          _missedDoseGraceMinutesMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -452,6 +523,18 @@ class $CachedPatientProfilesTable extends CachedPatientProfiles
         DriftSqlType.bool,
         data['${effectivePrefix}can_manage'],
       )!,
+      canReceiveMissedDoseAlerts: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}can_receive_missed_dose_alerts'],
+      )!,
+      canViewMedicationPlan: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}can_view_medication_plan'],
+      )!,
+      missedDoseGraceMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}missed_dose_grace_minutes'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -473,6 +556,9 @@ class CachedPatientProfile extends DataClass
   final int version;
   final String accessRole;
   final bool canManage;
+  final bool canReceiveMissedDoseAlerts;
+  final bool canViewMedicationPlan;
+  final int missedDoseGraceMinutes;
   final DateTime updatedAt;
   const CachedPatientProfile({
     required this.id,
@@ -481,6 +567,9 @@ class CachedPatientProfile extends DataClass
     required this.version,
     required this.accessRole,
     required this.canManage,
+    required this.canReceiveMissedDoseAlerts,
+    required this.canViewMedicationPlan,
+    required this.missedDoseGraceMinutes,
     required this.updatedAt,
   });
   @override
@@ -492,6 +581,11 @@ class CachedPatientProfile extends DataClass
     map['version'] = Variable<int>(version);
     map['access_role'] = Variable<String>(accessRole);
     map['can_manage'] = Variable<bool>(canManage);
+    map['can_receive_missed_dose_alerts'] = Variable<bool>(
+      canReceiveMissedDoseAlerts,
+    );
+    map['can_view_medication_plan'] = Variable<bool>(canViewMedicationPlan);
+    map['missed_dose_grace_minutes'] = Variable<int>(missedDoseGraceMinutes);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -504,6 +598,9 @@ class CachedPatientProfile extends DataClass
       version: Value(version),
       accessRole: Value(accessRole),
       canManage: Value(canManage),
+      canReceiveMissedDoseAlerts: Value(canReceiveMissedDoseAlerts),
+      canViewMedicationPlan: Value(canViewMedicationPlan),
+      missedDoseGraceMinutes: Value(missedDoseGraceMinutes),
       updatedAt: Value(updatedAt),
     );
   }
@@ -520,6 +617,15 @@ class CachedPatientProfile extends DataClass
       version: serializer.fromJson<int>(json['version']),
       accessRole: serializer.fromJson<String>(json['accessRole']),
       canManage: serializer.fromJson<bool>(json['canManage']),
+      canReceiveMissedDoseAlerts: serializer.fromJson<bool>(
+        json['canReceiveMissedDoseAlerts'],
+      ),
+      canViewMedicationPlan: serializer.fromJson<bool>(
+        json['canViewMedicationPlan'],
+      ),
+      missedDoseGraceMinutes: serializer.fromJson<int>(
+        json['missedDoseGraceMinutes'],
+      ),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -533,6 +639,11 @@ class CachedPatientProfile extends DataClass
       'version': serializer.toJson<int>(version),
       'accessRole': serializer.toJson<String>(accessRole),
       'canManage': serializer.toJson<bool>(canManage),
+      'canReceiveMissedDoseAlerts': serializer.toJson<bool>(
+        canReceiveMissedDoseAlerts,
+      ),
+      'canViewMedicationPlan': serializer.toJson<bool>(canViewMedicationPlan),
+      'missedDoseGraceMinutes': serializer.toJson<int>(missedDoseGraceMinutes),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -544,6 +655,9 @@ class CachedPatientProfile extends DataClass
     int? version,
     String? accessRole,
     bool? canManage,
+    bool? canReceiveMissedDoseAlerts,
+    bool? canViewMedicationPlan,
+    int? missedDoseGraceMinutes,
     DateTime? updatedAt,
   }) => CachedPatientProfile(
     id: id ?? this.id,
@@ -552,6 +666,11 @@ class CachedPatientProfile extends DataClass
     version: version ?? this.version,
     accessRole: accessRole ?? this.accessRole,
     canManage: canManage ?? this.canManage,
+    canReceiveMissedDoseAlerts:
+        canReceiveMissedDoseAlerts ?? this.canReceiveMissedDoseAlerts,
+    canViewMedicationPlan: canViewMedicationPlan ?? this.canViewMedicationPlan,
+    missedDoseGraceMinutes:
+        missedDoseGraceMinutes ?? this.missedDoseGraceMinutes,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   CachedPatientProfile copyWithCompanion(CachedPatientProfilesCompanion data) {
@@ -566,6 +685,15 @@ class CachedPatientProfile extends DataClass
           ? data.accessRole.value
           : this.accessRole,
       canManage: data.canManage.present ? data.canManage.value : this.canManage,
+      canReceiveMissedDoseAlerts: data.canReceiveMissedDoseAlerts.present
+          ? data.canReceiveMissedDoseAlerts.value
+          : this.canReceiveMissedDoseAlerts,
+      canViewMedicationPlan: data.canViewMedicationPlan.present
+          ? data.canViewMedicationPlan.value
+          : this.canViewMedicationPlan,
+      missedDoseGraceMinutes: data.missedDoseGraceMinutes.present
+          ? data.missedDoseGraceMinutes.value
+          : this.missedDoseGraceMinutes,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -579,6 +707,9 @@ class CachedPatientProfile extends DataClass
           ..write('version: $version, ')
           ..write('accessRole: $accessRole, ')
           ..write('canManage: $canManage, ')
+          ..write('canReceiveMissedDoseAlerts: $canReceiveMissedDoseAlerts, ')
+          ..write('canViewMedicationPlan: $canViewMedicationPlan, ')
+          ..write('missedDoseGraceMinutes: $missedDoseGraceMinutes, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -592,6 +723,9 @@ class CachedPatientProfile extends DataClass
     version,
     accessRole,
     canManage,
+    canReceiveMissedDoseAlerts,
+    canViewMedicationPlan,
+    missedDoseGraceMinutes,
     updatedAt,
   );
   @override
@@ -604,6 +738,9 @@ class CachedPatientProfile extends DataClass
           other.version == this.version &&
           other.accessRole == this.accessRole &&
           other.canManage == this.canManage &&
+          other.canReceiveMissedDoseAlerts == this.canReceiveMissedDoseAlerts &&
+          other.canViewMedicationPlan == this.canViewMedicationPlan &&
+          other.missedDoseGraceMinutes == this.missedDoseGraceMinutes &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -615,6 +752,9 @@ class CachedPatientProfilesCompanion
   final Value<int> version;
   final Value<String> accessRole;
   final Value<bool> canManage;
+  final Value<bool> canReceiveMissedDoseAlerts;
+  final Value<bool> canViewMedicationPlan;
+  final Value<int> missedDoseGraceMinutes;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const CachedPatientProfilesCompanion({
@@ -624,6 +764,9 @@ class CachedPatientProfilesCompanion
     this.version = const Value.absent(),
     this.accessRole = const Value.absent(),
     this.canManage = const Value.absent(),
+    this.canReceiveMissedDoseAlerts = const Value.absent(),
+    this.canViewMedicationPlan = const Value.absent(),
+    this.missedDoseGraceMinutes = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -634,6 +777,9 @@ class CachedPatientProfilesCompanion
     required int version,
     required String accessRole,
     required bool canManage,
+    this.canReceiveMissedDoseAlerts = const Value.absent(),
+    this.canViewMedicationPlan = const Value.absent(),
+    this.missedDoseGraceMinutes = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -650,6 +796,9 @@ class CachedPatientProfilesCompanion
     Expression<int>? version,
     Expression<String>? accessRole,
     Expression<bool>? canManage,
+    Expression<bool>? canReceiveMissedDoseAlerts,
+    Expression<bool>? canViewMedicationPlan,
+    Expression<int>? missedDoseGraceMinutes,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -660,6 +809,12 @@ class CachedPatientProfilesCompanion
       if (version != null) 'version': version,
       if (accessRole != null) 'access_role': accessRole,
       if (canManage != null) 'can_manage': canManage,
+      if (canReceiveMissedDoseAlerts != null)
+        'can_receive_missed_dose_alerts': canReceiveMissedDoseAlerts,
+      if (canViewMedicationPlan != null)
+        'can_view_medication_plan': canViewMedicationPlan,
+      if (missedDoseGraceMinutes != null)
+        'missed_dose_grace_minutes': missedDoseGraceMinutes,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -672,6 +827,9 @@ class CachedPatientProfilesCompanion
     Value<int>? version,
     Value<String>? accessRole,
     Value<bool>? canManage,
+    Value<bool>? canReceiveMissedDoseAlerts,
+    Value<bool>? canViewMedicationPlan,
+    Value<int>? missedDoseGraceMinutes,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -682,6 +840,12 @@ class CachedPatientProfilesCompanion
       version: version ?? this.version,
       accessRole: accessRole ?? this.accessRole,
       canManage: canManage ?? this.canManage,
+      canReceiveMissedDoseAlerts:
+          canReceiveMissedDoseAlerts ?? this.canReceiveMissedDoseAlerts,
+      canViewMedicationPlan:
+          canViewMedicationPlan ?? this.canViewMedicationPlan,
+      missedDoseGraceMinutes:
+          missedDoseGraceMinutes ?? this.missedDoseGraceMinutes,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -708,6 +872,21 @@ class CachedPatientProfilesCompanion
     if (canManage.present) {
       map['can_manage'] = Variable<bool>(canManage.value);
     }
+    if (canReceiveMissedDoseAlerts.present) {
+      map['can_receive_missed_dose_alerts'] = Variable<bool>(
+        canReceiveMissedDoseAlerts.value,
+      );
+    }
+    if (canViewMedicationPlan.present) {
+      map['can_view_medication_plan'] = Variable<bool>(
+        canViewMedicationPlan.value,
+      );
+    }
+    if (missedDoseGraceMinutes.present) {
+      map['missed_dose_grace_minutes'] = Variable<int>(
+        missedDoseGraceMinutes.value,
+      );
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -726,6 +905,9 @@ class CachedPatientProfilesCompanion
           ..write('version: $version, ')
           ..write('accessRole: $accessRole, ')
           ..write('canManage: $canManage, ')
+          ..write('canReceiveMissedDoseAlerts: $canReceiveMissedDoseAlerts, ')
+          ..write('canViewMedicationPlan: $canViewMedicationPlan, ')
+          ..write('missedDoseGraceMinutes: $missedDoseGraceMinutes, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -778,6 +960,18 @@ class $CachedMedicationsTable extends CachedMedications
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mealRelationMeta = const VerificationMeta(
+    'mealRelation',
+  );
+  @override
+  late final GeneratedColumn<String> mealRelation = GeneratedColumn<String>(
+    'meal_relation',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('UNSPECIFIED'),
   );
   static const VerificationMeta _quantityLabelMeta = const VerificationMeta(
     'quantityLabel',
@@ -838,6 +1032,7 @@ class $CachedMedicationsTable extends CachedMedications
     profileId,
     displayName,
     form,
+    mealRelation,
     quantityLabel,
     status,
     strengthLabel,
@@ -887,6 +1082,15 @@ class $CachedMedicationsTable extends CachedMedications
       );
     } else if (isInserting) {
       context.missing(_formMeta);
+    }
+    if (data.containsKey('meal_relation')) {
+      context.handle(
+        _mealRelationMeta,
+        mealRelation.isAcceptableOrUnknown(
+          data['meal_relation']!,
+          _mealRelationMeta,
+        ),
+      );
     }
     if (data.containsKey('quantity_label')) {
       context.handle(
@@ -958,6 +1162,10 @@ class $CachedMedicationsTable extends CachedMedications
         DriftSqlType.string,
         data['${effectivePrefix}form'],
       )!,
+      mealRelation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meal_relation'],
+      )!,
       quantityLabel: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}quantity_label'],
@@ -993,6 +1201,7 @@ class CachedMedication extends DataClass
   final String profileId;
   final String displayName;
   final String form;
+  final String mealRelation;
   final String quantityLabel;
   final String status;
   final String? strengthLabel;
@@ -1003,6 +1212,7 @@ class CachedMedication extends DataClass
     required this.profileId,
     required this.displayName,
     required this.form,
+    required this.mealRelation,
     required this.quantityLabel,
     required this.status,
     this.strengthLabel,
@@ -1016,6 +1226,7 @@ class CachedMedication extends DataClass
     map['profile_id'] = Variable<String>(profileId);
     map['display_name'] = Variable<String>(displayName);
     map['form'] = Variable<String>(form);
+    map['meal_relation'] = Variable<String>(mealRelation);
     map['quantity_label'] = Variable<String>(quantityLabel);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || strengthLabel != null) {
@@ -1034,6 +1245,7 @@ class CachedMedication extends DataClass
       profileId: Value(profileId),
       displayName: Value(displayName),
       form: Value(form),
+      mealRelation: Value(mealRelation),
       quantityLabel: Value(quantityLabel),
       status: Value(status),
       strengthLabel: strengthLabel == null && nullToAbsent
@@ -1056,6 +1268,7 @@ class CachedMedication extends DataClass
       profileId: serializer.fromJson<String>(json['profileId']),
       displayName: serializer.fromJson<String>(json['displayName']),
       form: serializer.fromJson<String>(json['form']),
+      mealRelation: serializer.fromJson<String>(json['mealRelation']),
       quantityLabel: serializer.fromJson<String>(json['quantityLabel']),
       status: serializer.fromJson<String>(json['status']),
       strengthLabel: serializer.fromJson<String?>(json['strengthLabel']),
@@ -1073,6 +1286,7 @@ class CachedMedication extends DataClass
       'profileId': serializer.toJson<String>(profileId),
       'displayName': serializer.toJson<String>(displayName),
       'form': serializer.toJson<String>(form),
+      'mealRelation': serializer.toJson<String>(mealRelation),
       'quantityLabel': serializer.toJson<String>(quantityLabel),
       'status': serializer.toJson<String>(status),
       'strengthLabel': serializer.toJson<String?>(strengthLabel),
@@ -1086,6 +1300,7 @@ class CachedMedication extends DataClass
     String? profileId,
     String? displayName,
     String? form,
+    String? mealRelation,
     String? quantityLabel,
     String? status,
     Value<String?> strengthLabel = const Value.absent(),
@@ -1096,6 +1311,7 @@ class CachedMedication extends DataClass
     profileId: profileId ?? this.profileId,
     displayName: displayName ?? this.displayName,
     form: form ?? this.form,
+    mealRelation: mealRelation ?? this.mealRelation,
     quantityLabel: quantityLabel ?? this.quantityLabel,
     status: status ?? this.status,
     strengthLabel: strengthLabel.present
@@ -1114,6 +1330,9 @@ class CachedMedication extends DataClass
           ? data.displayName.value
           : this.displayName,
       form: data.form.present ? data.form.value : this.form,
+      mealRelation: data.mealRelation.present
+          ? data.mealRelation.value
+          : this.mealRelation,
       quantityLabel: data.quantityLabel.present
           ? data.quantityLabel.value
           : this.quantityLabel,
@@ -1135,6 +1354,7 @@ class CachedMedication extends DataClass
           ..write('profileId: $profileId, ')
           ..write('displayName: $displayName, ')
           ..write('form: $form, ')
+          ..write('mealRelation: $mealRelation, ')
           ..write('quantityLabel: $quantityLabel, ')
           ..write('status: $status, ')
           ..write('strengthLabel: $strengthLabel, ')
@@ -1150,6 +1370,7 @@ class CachedMedication extends DataClass
     profileId,
     displayName,
     form,
+    mealRelation,
     quantityLabel,
     status,
     strengthLabel,
@@ -1164,6 +1385,7 @@ class CachedMedication extends DataClass
           other.profileId == this.profileId &&
           other.displayName == this.displayName &&
           other.form == this.form &&
+          other.mealRelation == this.mealRelation &&
           other.quantityLabel == this.quantityLabel &&
           other.status == this.status &&
           other.strengthLabel == this.strengthLabel &&
@@ -1176,6 +1398,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
   final Value<String> profileId;
   final Value<String> displayName;
   final Value<String> form;
+  final Value<String> mealRelation;
   final Value<String> quantityLabel;
   final Value<String> status;
   final Value<String?> strengthLabel;
@@ -1187,6 +1410,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
     this.profileId = const Value.absent(),
     this.displayName = const Value.absent(),
     this.form = const Value.absent(),
+    this.mealRelation = const Value.absent(),
     this.quantityLabel = const Value.absent(),
     this.status = const Value.absent(),
     this.strengthLabel = const Value.absent(),
@@ -1199,6 +1423,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
     required String profileId,
     required String displayName,
     required String form,
+    this.mealRelation = const Value.absent(),
     required String quantityLabel,
     required String status,
     this.strengthLabel = const Value.absent(),
@@ -1217,6 +1442,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
     Expression<String>? profileId,
     Expression<String>? displayName,
     Expression<String>? form,
+    Expression<String>? mealRelation,
     Expression<String>? quantityLabel,
     Expression<String>? status,
     Expression<String>? strengthLabel,
@@ -1229,6 +1455,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
       if (profileId != null) 'profile_id': profileId,
       if (displayName != null) 'display_name': displayName,
       if (form != null) 'form': form,
+      if (mealRelation != null) 'meal_relation': mealRelation,
       if (quantityLabel != null) 'quantity_label': quantityLabel,
       if (status != null) 'status': status,
       if (strengthLabel != null) 'strength_label': strengthLabel,
@@ -1244,6 +1471,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
     Value<String>? profileId,
     Value<String>? displayName,
     Value<String>? form,
+    Value<String>? mealRelation,
     Value<String>? quantityLabel,
     Value<String>? status,
     Value<String?>? strengthLabel,
@@ -1256,6 +1484,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
       profileId: profileId ?? this.profileId,
       displayName: displayName ?? this.displayName,
       form: form ?? this.form,
+      mealRelation: mealRelation ?? this.mealRelation,
       quantityLabel: quantityLabel ?? this.quantityLabel,
       status: status ?? this.status,
       strengthLabel: strengthLabel ?? this.strengthLabel,
@@ -1279,6 +1508,9 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
     }
     if (form.present) {
       map['form'] = Variable<String>(form.value);
+    }
+    if (mealRelation.present) {
+      map['meal_relation'] = Variable<String>(mealRelation.value);
     }
     if (quantityLabel.present) {
       map['quantity_label'] = Variable<String>(quantityLabel.value);
@@ -1308,6 +1540,7 @@ class CachedMedicationsCompanion extends UpdateCompanion<CachedMedication> {
           ..write('profileId: $profileId, ')
           ..write('displayName: $displayName, ')
           ..write('form: $form, ')
+          ..write('mealRelation: $mealRelation, ')
           ..write('quantityLabel: $quantityLabel, ')
           ..write('status: $status, ')
           ..write('strengthLabel: $strengthLabel, ')
@@ -3610,6 +3843,9 @@ typedef $$CachedPatientProfilesTableCreateCompanionBuilder =
       required int version,
       required String accessRole,
       required bool canManage,
+      Value<bool> canReceiveMissedDoseAlerts,
+      Value<bool> canViewMedicationPlan,
+      Value<int> missedDoseGraceMinutes,
       required DateTime updatedAt,
       Value<int> rowid,
     });
@@ -3621,6 +3857,9 @@ typedef $$CachedPatientProfilesTableUpdateCompanionBuilder =
       Value<int> version,
       Value<String> accessRole,
       Value<bool> canManage,
+      Value<bool> canReceiveMissedDoseAlerts,
+      Value<bool> canViewMedicationPlan,
+      Value<int> missedDoseGraceMinutes,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -3661,6 +3900,21 @@ class $$CachedPatientProfilesTableFilterComposer
 
   ColumnFilters<bool> get canManage => $composableBuilder(
     column: $table.canManage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get canReceiveMissedDoseAlerts => $composableBuilder(
+    column: $table.canReceiveMissedDoseAlerts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get canViewMedicationPlan => $composableBuilder(
+    column: $table.canViewMedicationPlan,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get missedDoseGraceMinutes => $composableBuilder(
+    column: $table.missedDoseGraceMinutes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3709,6 +3963,21 @@ class $$CachedPatientProfilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get canReceiveMissedDoseAlerts => $composableBuilder(
+    column: $table.canReceiveMissedDoseAlerts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get canViewMedicationPlan => $composableBuilder(
+    column: $table.canViewMedicationPlan,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get missedDoseGraceMinutes => $composableBuilder(
+    column: $table.missedDoseGraceMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -3745,6 +4014,21 @@ class $$CachedPatientProfilesTableAnnotationComposer
 
   GeneratedColumn<bool> get canManage =>
       $composableBuilder(column: $table.canManage, builder: (column) => column);
+
+  GeneratedColumn<bool> get canReceiveMissedDoseAlerts => $composableBuilder(
+    column: $table.canReceiveMissedDoseAlerts,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get canViewMedicationPlan => $composableBuilder(
+    column: $table.canViewMedicationPlan,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get missedDoseGraceMinutes => $composableBuilder(
+    column: $table.missedDoseGraceMinutes,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -3802,6 +4086,9 @@ class $$CachedPatientProfilesTableTableManager
                 Value<int> version = const Value.absent(),
                 Value<String> accessRole = const Value.absent(),
                 Value<bool> canManage = const Value.absent(),
+                Value<bool> canReceiveMissedDoseAlerts = const Value.absent(),
+                Value<bool> canViewMedicationPlan = const Value.absent(),
+                Value<int> missedDoseGraceMinutes = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedPatientProfilesCompanion(
@@ -3811,6 +4098,9 @@ class $$CachedPatientProfilesTableTableManager
                 version: version,
                 accessRole: accessRole,
                 canManage: canManage,
+                canReceiveMissedDoseAlerts: canReceiveMissedDoseAlerts,
+                canViewMedicationPlan: canViewMedicationPlan,
+                missedDoseGraceMinutes: missedDoseGraceMinutes,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -3822,6 +4112,9 @@ class $$CachedPatientProfilesTableTableManager
                 required int version,
                 required String accessRole,
                 required bool canManage,
+                Value<bool> canReceiveMissedDoseAlerts = const Value.absent(),
+                Value<bool> canViewMedicationPlan = const Value.absent(),
+                Value<int> missedDoseGraceMinutes = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => CachedPatientProfilesCompanion.insert(
@@ -3831,6 +4124,9 @@ class $$CachedPatientProfilesTableTableManager
                 version: version,
                 accessRole: accessRole,
                 canManage: canManage,
+                canReceiveMissedDoseAlerts: canReceiveMissedDoseAlerts,
+                canViewMedicationPlan: canViewMedicationPlan,
+                missedDoseGraceMinutes: missedDoseGraceMinutes,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -3869,6 +4165,7 @@ typedef $$CachedMedicationsTableCreateCompanionBuilder =
       required String profileId,
       required String displayName,
       required String form,
+      Value<String> mealRelation,
       required String quantityLabel,
       required String status,
       Value<String?> strengthLabel,
@@ -3882,6 +4179,7 @@ typedef $$CachedMedicationsTableUpdateCompanionBuilder =
       Value<String> profileId,
       Value<String> displayName,
       Value<String> form,
+      Value<String> mealRelation,
       Value<String> quantityLabel,
       Value<String> status,
       Value<String?> strengthLabel,
@@ -3916,6 +4214,11 @@ class $$CachedMedicationsTableFilterComposer
 
   ColumnFilters<String> get form => $composableBuilder(
     column: $table.form,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mealRelation => $composableBuilder(
+    column: $table.mealRelation,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3974,6 +4277,11 @@ class $$CachedMedicationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get mealRelation => $composableBuilder(
+    column: $table.mealRelation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get quantityLabel => $composableBuilder(
     column: $table.quantityLabel,
     builder: (column) => ColumnOrderings(column),
@@ -4022,6 +4330,11 @@ class $$CachedMedicationsTableAnnotationComposer
 
   GeneratedColumn<String> get form =>
       $composableBuilder(column: $table.form, builder: (column) => column);
+
+  GeneratedColumn<String> get mealRelation => $composableBuilder(
+    column: $table.mealRelation,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get quantityLabel => $composableBuilder(
     column: $table.quantityLabel,
@@ -4089,6 +4402,7 @@ class $$CachedMedicationsTableTableManager
                 Value<String> profileId = const Value.absent(),
                 Value<String> displayName = const Value.absent(),
                 Value<String> form = const Value.absent(),
+                Value<String> mealRelation = const Value.absent(),
                 Value<String> quantityLabel = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> strengthLabel = const Value.absent(),
@@ -4100,6 +4414,7 @@ class $$CachedMedicationsTableTableManager
                 profileId: profileId,
                 displayName: displayName,
                 form: form,
+                mealRelation: mealRelation,
                 quantityLabel: quantityLabel,
                 status: status,
                 strengthLabel: strengthLabel,
@@ -4113,6 +4428,7 @@ class $$CachedMedicationsTableTableManager
                 required String profileId,
                 required String displayName,
                 required String form,
+                Value<String> mealRelation = const Value.absent(),
                 required String quantityLabel,
                 required String status,
                 Value<String?> strengthLabel = const Value.absent(),
@@ -4124,6 +4440,7 @@ class $$CachedMedicationsTableTableManager
                 profileId: profileId,
                 displayName: displayName,
                 form: form,
+                mealRelation: mealRelation,
                 quantityLabel: quantityLabel,
                 status: status,
                 strengthLabel: strengthLabel,
